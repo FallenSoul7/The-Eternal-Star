@@ -17,29 +17,66 @@ export function AuthGateway({ onAuthSuccess }: AuthGatewayProps) {
   const handleLaunchClick = (selectedMode: 'login' | 'signup') => {
     setMode(selectedMode);
     setScreen('form');
+    setUsername('');
+    setPassword('');
     setError('');
+  };
+
+  const validateUsername = (str: string): boolean => {
+    // Counts how many hyphens are in the username string
+    const hyphenCount = (str.match(/-/g) || []).length;
+    if (hyphenCount > 1) return false;
+
+    // Removes a single hyphen if it exists, then checks if the rest are purely letters
+    const pureLetters = str.replace('-', '');
+    const alphaRegex = /^[A-Za-z]+$/;
+    return alphaRegex.test(pureLetters);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     
-    if (!username || !password) {
+    const cleanUsername = username.trim();
+    if (!cleanUsername || !password) {
       setError('Please fill out all fields.');
       return;
     }
 
+    // Strict validation check for username formatting
+    if (!validateUsername(cleanUsername)) {
+      setError('Username must contain only alphabets with only one "-" allowed.');
+      return;
+    }
+
+    // Strict validation check for password length
     if (password.length < 6) {
-      setError('Password must be at least 6 characters long.');
+      setError('Password must be at least 6 digits or letters long.');
       return;
     }
 
     setLoading(true);
 
-    const formattedEmail = `${username.toLowerCase()}@agentshire.local`;
+    // Map username to a internal virtual email structure for Supabase Auth auth backend
+    const formattedEmail = `${cleanUsername.toLowerCase()}@agentshire.local`;
 
     try {
       if (mode === 'signup') {
+        // First check if the username profile record already exists in public profiles table
+        const { data: existingUser, error: checkError } = await supabase
+          .from('profiles')
+          .select('username')
+          .eq('username', cleanUsername)
+          .maybeSingle();
+
+        if (checkError) throw checkError;
+        if (existingUser) {
+          setError('Username already exists.');
+          setLoading(false);
+          return;
+        }
+
+        // Register the new authentication account credentials
         const { error: signUpError } = await supabase.auth.signUp({
           email: formattedEmail,
           password: password,
@@ -47,24 +84,30 @@ export function AuthGateway({ onAuthSuccess }: AuthGatewayProps) {
 
         if (signUpError) throw signUpError;
         
+        // Save the unique username record into profiles table database
         const { error: profileError } = await supabase.from('profiles').insert([
-          { username: username }
+          { username: cleanUsername }
         ]);
         
         if (profileError) throw profileError;
 
       } else {
+        // Authenticate existing login credentials
         const { error: signInError } = await supabase.auth.signInWithPassword({
           email: formattedEmail,
           password: password,
         });
 
-        if (signInError) throw signInError;
+        if (signInError) {
+          setError('Invalid username or password.');
+          setLoading(false);
+          return;
+        }
       }
 
       onAuthSuccess();
     } catch (err: any) {
-      setError(err.message || 'Authentication failed. Please try again.');
+      setError(err.message || 'An error occurred during authentication.');
     } finally {
       setLoading(false);
     }
@@ -72,14 +115,14 @@ export function AuthGateway({ onAuthSuccess }: AuthGatewayProps) {
 
   if (screen === 'launch') {
     return (
-      <div className="flex flex-col items-center justify-center w-screen h-screen bg-black text-white font-sans select-none">
+      <div className="flex flex-col items-center justify-between w-screen h-screen bg-black text-white font-sans select-none pb-12 pt-24">
         <div className="flex-1 flex items-center justify-center">
           <h1 className="text-4xl font-black tracking-widest text-[#38bdf8] uppercase drop-shadow-[0_0_15px_rgba(56,189,248,0.5)]">
             Agentshire
           </h1>
         </div>
         
-        <div className="w-full max-w-sm px-6 pb-12 space-y-4">
+        <div className="w-full max-w-sm px-6 space-y-4">
           <button 
             onClick={() => handleLaunchClick('login')}
             className="w-full py-4 bg-white text-black font-bold text-lg rounded-full active:scale-95 transition-transform"
@@ -121,7 +164,7 @@ export function AuthGateway({ onAuthSuccess }: AuthGatewayProps) {
               type="text"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
-              placeholder="Enter unique username..."
+              placeholder="Alphabets and max one '-' allowed"
               className="w-full bg-[#1a1a2e] text-white px-4 py-4 rounded-xl border border-[#2b2b40] focus:outline-none focus:border-[#38bdf8]"
             />
           </div>
@@ -134,14 +177,14 @@ export function AuthGateway({ onAuthSuccess }: AuthGatewayProps) {
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder="Min. 6 characters..."
+              placeholder="Minimum 6 characters"
               className="w-full bg-[#1a1a2e] text-white px-4 py-4 rounded-xl border border-[#2b2b40] focus:outline-none focus:border-[#38bdf8]"
             />
           </div>
 
           {error && (
-            <div className="text-red-500 text-sm font-bold mt-2">
-              Error: {error}
+            <div className="text-red-500 text-sm font-bold mt-4 p-3 bg-red-950/30 border border-red-900/50 rounded-lg">
+              {error}
             </div>
           )}
 
@@ -152,7 +195,7 @@ export function AuthGateway({ onAuthSuccess }: AuthGatewayProps) {
               loading ? 'bg-gray-500' : 'bg-[#38bdf8] active:scale-95'
             }`}
           >
-            {loading ? 'Processing...' : mode === 'login' ? 'Log In' : 'Sign Up'}
+            {loading ? 'Processing...' : mode === 'login' ? 'Log In' : 'Create Account'}
           </button>
         </form>
       </div>
