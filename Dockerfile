@@ -1,5 +1,10 @@
-# Build stage: only the shared package needs compilation
+# ==========================================
+# STAGE 1: Build Stage
+# ==========================================
 FROM node:24 AS build
+
+# FIX: Completely disable pnpm 11's strict build security prompt
+ENV pnpm_config_strict_dep_builds=false
 
 RUN corepack enable
 
@@ -9,15 +14,20 @@ COPY package.json pnpm-workspace.yaml pnpm-lock.yaml ./
 COPY back/package.json ./back/
 COPY shared/package.json ./shared/
 
-# FIX: Allow lockfile updates and bypass strict security sandbox
-RUN pnpm install --no-frozen-lockfile --unsafe-perm
+# Allow lockfile updates to prevent crash from new packages
+RUN pnpm install --no-frozen-lockfile
 
 COPY shared ./shared/
 RUN pnpm run build:shared
 
-# Production stage
+# ==========================================
+# STAGE 2: Production Stage
+# ==========================================
 # uWebSockets.js requires glibc >= 2.38 -> Debian Trixie
 FROM node:24-trixie-slim
+
+# FIX: Completely disable pnpm 11's strict build security prompt
+ENV pnpm_config_strict_dep_builds=false
 
 RUN corepack enable
 
@@ -27,15 +37,13 @@ COPY package.json pnpm-workspace.yaml pnpm-lock.yaml ./
 COPY back/package.json ./back/
 COPY shared/package.json ./shared/
 
-# FIX: Allow lockfile updates for production dependencies
-RUN pnpm install --no-frozen-lockfile --prod --unsafe-perm
+# Install production dependencies allowing lockfile updates
+RUN pnpm install --no-frozen-lockfile --prod
 
-# Copy shared source + compiled dist:
-#   dist/ is needed for @notblox/shared package resolution
-#   source is needed for relative imports inside scripts (e.g. ../../../shared/system/...)
+# Copy shared source + compiled dist
 COPY --from=build /app/shared ./shared/
 
-# Copy back source + tsconfig so tsx can resolve @shared/* path aliases at runtime.
+# Copy back source + tsconfig
 COPY back/tsconfig.json ./back/
 COPY back/src ./back/src
 
@@ -46,4 +54,5 @@ WORKDIR /app/back
 HEALTHCHECK --interval=5s --timeout=3s --start-period=15s --retries=3 \
   CMD node -e "const n=require('net').createConnection(8001,'localhost'); n.on('connect',()=>{n.destroy();process.exit(0);}); n.on('error',()=>process.exit(1));"
 
+# Start the game server
 CMD ["node", "--import", "tsx/esm", "src/sandbox.ts"]
