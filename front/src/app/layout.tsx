@@ -1,7 +1,7 @@
 import type { Metadata, Viewport } from 'next'
 import { Inter } from 'next/font/google'
 // CRUCIAL: Connects Tailwind globally across your entire project
-import '../styles/globals.css' 
+import '../../../style/global.css'
 
 const inter = Inter({ 
   subsets: ['latin'],
