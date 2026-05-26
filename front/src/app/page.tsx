@@ -9,9 +9,16 @@ import Navbar from '../../components/Navbar'
 import { Github, Twitter } from 'lucide-react'
 import Link from 'next/link'
 import type { Session } from '@supabase/supabase-js'
-import { GameInfo } from '../types'
 // gameData.json is in front/public/, so go up 2 levels
 import gameData from '../../public/gameData.json'
+
+// Declaring the interface locally so it completely bypasses the broken types file import
+export interface GameInfo {
+  slug: string
+  title: string
+  metaDescription: string
+  images?: string[]
+}
 
 export default function Home() {
   const [session, setSession] = useState<Session | null>(null)
