@@ -1,7 +1,8 @@
 import type { Metadata, Viewport } from 'next'
 import { Inter } from 'next/font/google'
-// CRUCIAL: Connects Tailwind globally across your entire 
-import '@/../style/global.css'
+// FIXED: Points natively to the new globals.css file right inside this folder
+import './globals.css'
+
 const inter = Inter({ 
   subsets: ['latin'],
   variable: '--font-sans',
@@ -12,7 +13,7 @@ export const metadata: Metadata = {
   title: 'Agentshire | Ultimate Browser Sandbox',
   description: 'Play high-performance 3D multiplayer browser games instantly with your friends. No downloads required.',
   icons: {
-    icon: '/favicon.ico', // Adjust if you have a custom asset icon path
+    icon: '/favicon.ico', 
   }
 }
 
