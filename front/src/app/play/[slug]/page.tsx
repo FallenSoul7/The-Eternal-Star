@@ -1,7 +1,10 @@
+// Go up 4 levels to reach front/public/
 import gameData from '../../../../public/gameData.json'
+// Go up 3 levels to reach front/src/types (adjusting to '../../types' if it sits in front/types)
 import { GameInfo } from '../../../types'
 import { Metadata } from 'next'
-import GameContent from '../../../components/GameContent'
+// Go up 4 levels to reach front/components/
+import GameContent from '../../../../components/GameContent'
 
 export async function generateStaticParams() {
   const games = gameData as GameInfo[]
