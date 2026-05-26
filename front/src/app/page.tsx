@@ -12,12 +12,21 @@ import type { Session } from '@supabase/supabase-js'
 // gameData.json is in front/public/, so go up 2 levels
 import gameData from '../../public/gameData.json'
 
-// Declaring the interface locally so it completely bypasses the broken types file import
+// Perfect type definition mapping your exact JSON layout
 export interface GameInfo {
-  slug: string
   title: string
+  imageUrl: string
+  slug: string
+  websocketPort: number
   metaDescription: string
-  images?: string[]
+  markdown: string
+  images: {
+    url: string
+    width: number
+    height: number
+    alt: string
+    type: string
+  }[]
 }
 
 export default function Home() {
