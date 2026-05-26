@@ -1,6 +1,6 @@
 import type { Metadata, Viewport } from 'next'
 import { Inter } from 'next/font/google'
-// FIXED: Points natively to the new globals.css file right inside this folder
+// Natively imports the globals.css file sitting in the same folder
 import './globals.css'
 
 const inter = Inter({ 
@@ -8,7 +8,6 @@ const inter = Inter({
   variable: '--font-sans',
 })
 
-// Clean, professional metadata configuration
 export const metadata: Metadata = {
   title: 'Agentshire | Ultimate Browser Sandbox',
   description: 'Play high-performance 3D multiplayer browser games instantly with your friends. No downloads required.',
@@ -17,8 +16,7 @@ export const metadata: Metadata = {
   }
 }
 
-// INSANE MOBILE OPTIMIZATION: Prevents users from accidentally zooming or pinching 
-// the web view while hitting buttons/joysticks in your game!
+// Mobile rendering optimization layer to lock viewports and block sticky multi-touch zooming glitches
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
@@ -37,7 +35,6 @@ export default function RootLayout({
       <body
         className={`${inter.variable} font-sans antialiased bg-[#09090b] text-[#fafafa] min-h-screen w-screen overflow-x-hidden`}
       >
-        {/* Main Application Shell Wrapper */}
         <main className="relative flex flex-col min-h-screen w-full">
           {children}
         </main>
