@@ -1,13 +1,15 @@
 import type { Metadata, Viewport } from 'next'
 import { Inter } from 'next/font/google'
-// Natively imports the globals.css file sitting in the same folder
-import '@/app/globals.css'
+
+// THE ONLY BULLETPROOF WAY: Standard local file targeting
+import './globals.css' 
 
 const inter = Inter({ 
   subsets: ['latin'],
   variable: '--font-sans',
 })
 
+// ... rest of your layout metadata and code remains exactly the same
 export const metadata: Metadata = {
   title: 'Agentshire | Ultimate Browser Sandbox',
   description: 'Play high-performance 3D multiplayer browser games instantly with your friends. No downloads required.',
