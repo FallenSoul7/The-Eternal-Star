@@ -57,7 +57,7 @@ export function AuthGateway({ onAuthSuccess }: AuthGatewayProps) {
 
     setLoading(true);
 
-    // Map username to a internal virtual email structure for Supabase Auth auth backend
+    // Map username to an internal virtual email structure for Supabase Auth backend
     const formattedEmail = `${cleanUsername.toLowerCase()}@agentshire.local`;
 
     try {
@@ -82,7 +82,13 @@ export function AuthGateway({ onAuthSuccess }: AuthGatewayProps) {
           password: password,
         });
 
-        if (signUpError) throw signUpError;
+        if (signUpError) {
+          // Helpful tip if your IP is still recovering from the rate limit window
+          if (signUpError.message.includes('rate limit')) {
+            throw new Error('Rate limit exceeded. Please toggle off your device Wi-Fi to use cellular data, or try again in a few minutes.');
+          }
+          throw signUpError;
+        }
         
         // Save the unique username record into profiles table database
         const { error: profileError } = await supabase.from('profiles').insert([
@@ -105,6 +111,7 @@ export function AuthGateway({ onAuthSuccess }: AuthGatewayProps) {
         }
       }
 
+      // Success! Clear input and pass control back to app layout
       onAuthSuccess();
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : 'An error occurred during authentication.';
