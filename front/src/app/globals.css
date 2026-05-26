@@ -42,6 +42,8 @@
   }
   body {
     @apply bg-background text-foreground;
+    /* Force mobile browsers to recognize a tiny bit of extra room so they hide the URL bars */
+    min-height: 101vh;
   }
 }
 
