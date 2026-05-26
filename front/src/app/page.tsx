@@ -1,15 +1,15 @@
 'use client'
 import { useEffect, useState } from 'react'
-import { supabase } from '@/supabaseClient'
-import { AuthGateway } from '@/components/AuthGateway'
-import GameCard from '@/components/GameCard'
-import Navbar from '@/components/Navbar'
+import { supabase } from '../supabaseClient'
+import { AuthGateway } from '../components/AuthGateway'
+import GameCard from '../components/GameCard'
+import Navbar from '../components/Navbar'
 import { Github, Twitter } from 'lucide-react'
 import Link from 'next/link'
 import type { Session } from '@supabase/supabase-js'
-import { GameInfo } from '@/types'
-// Note: Adjusted to reach the public folder at the root of 'front'
-import gameData from '../../../public/gameData.json'
+import { GameInfo } from '../types'
+// This goes up 2 levels: app -> src -> front/public
+import gameData from '../../public/gameData.json'
 
 export default function Home() {
   const [session, setSession] = useState<Session | null>(null)
