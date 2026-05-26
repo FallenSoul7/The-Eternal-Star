@@ -1,14 +1,16 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { supabase } from '../supabaseClient'
+// AuthGateway is in front/src/components/, so go up 1 level
 import { AuthGateway } from '../components/AuthGateway'
-import GameCard from '../components/GameCard'
-import Navbar from '../components/Navbar'
+// GameCard and Navbar are in front/components/, so go up 2 levels
+import GameCard from '../../components/GameCard'
+import Navbar from '../../components/Navbar'
 import { Github, Twitter } from 'lucide-react'
 import Link from 'next/link'
 import type { Session } from '@supabase/supabase-js'
 import { GameInfo } from '../types'
-// This goes up 2 levels: app -> src -> front/public
+// gameData.json is in front/public/, so go up 2 levels
 import gameData from '../../public/gameData.json'
 
 export default function Home() {
