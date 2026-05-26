@@ -6,8 +6,6 @@ import { AuthGateway } from '../components/AuthGateway'
 // GameCard and Navbar are in front/components/, so go up 2 levels
 import GameCard from '../../components/GameCard'
 import Navbar from '../../components/Navbar'
-import { Github, Twitter } from 'lucide-react'
-import Link from 'next/link'
 import type { Session } from '@supabase/supabase-js'
 // gameData.json is in front/public/, so go up 2 levels
 import gameData from '../../public/gameData.json'
@@ -76,34 +74,6 @@ export default function Home() {
               <GameCard {...game} />
             </div>
           ))}
-      </div>
-
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-3 my-4">
-        <Link
-          href={'https://discord.gg/kPhgtj49U2'}
-          target="_blank"
-          className="flex items-center justify-center gap-2 px-4 py-3 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors"
-        >
-          <span className="font-medium">Join Discord</span>
-        </Link>
-
-        <Link
-          href={'https://github.com/iercann/notblox'}
-          target="_blank"
-          className="flex items-center justify-center gap-2 px-4 py-3 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors"
-        >
-          <Github size={20} />
-          <span className="font-medium">View on GitHub</span>
-        </Link>
-
-        <Link
-          href={'https://twitter.com/iercann'}
-          target="_blank"
-          className="flex items-center justify-center gap-2 px-4 py-3 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors"
-        >
-          <Twitter size={20} />
-          <span className="font-medium">Follow Dev</span>
-        </Link>
       </div>
     </div>
   )
