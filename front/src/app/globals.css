@@ -42,11 +42,14 @@
   }
   body {
     @apply bg-background text-foreground;
-    /* Force mobile browsers to recognize a tiny bit of extra room so they hide the URL bars */
-    min-height: 101vh;
+    /* svh means Small Viewport Height. It calculates the screen height 
+       EXCLUDING the browser bars, forcing a tiny bit of scrollroom 
+       even when you flip the phone sideways! */
+    min-height: 102svh;
+    /* Keeps the page from shifting left and right during rotation */
+    overflow-x: hidden; 
   }
 }
-
 /* Smooth animations for mobile HUD layout alerts & global notifications */
 @keyframes bounceIn {
   0% { opacity: 0; transform: translate(-50%, -10px) scale(0.95); }
