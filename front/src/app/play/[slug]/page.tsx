@@ -3,14 +3,13 @@ import { Metadata } from 'next'
 import GameContent from '../../../../components/GameContent'
 
 // Declaring the type locally so it never fails to import
+// Declaring the type locally without using 'any' to pass strict linting rules
 export interface GameInfo {
   slug: string
   title: string
   metaDescription: string
   images?: string[]
-  [key: string]: any // Fallback for any other custom properties in your JSON
 }
-
 // 1. Generate paths for all games at build time
 export async function generateStaticParams() {
   const games = gameData as GameInfo[]
