@@ -9,13 +9,25 @@ const inter = Inter({
   variable: '--font-sans',
 })
 
-// ... rest of your layout metadata and code remains exactly the same
 export const metadata: Metadata = {
   title: 'Agentshire | Ultimate Browser Sandbox',
   description: 'Play high-performance 3D multiplayer browser games instantly with your friends. No downloads required.',
   icons: {
     icon: '/favicon.ico', 
-  }
+    // Apple touch icon is highly recommended for iOS home screen
+    apple: '/favicon.ico', 
+  },
+  // Explicitly link your manifest if you are using a static public/manifest.json
+  manifest: '/manifest.json',
+  // THIS IS THE MAGIC FIX FOR iOS:
+  appleWebApp: {
+    capable: true,
+    title: 'Agentshire',
+    statusBarStyle: 'black-translucent',
+  },
+  formatDetection: {
+    telephone: false,
+  },
 }
 
 // Mobile rendering optimization layer to lock viewports and block sticky multi-touch zooming glitches
