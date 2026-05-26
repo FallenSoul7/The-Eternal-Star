@@ -1,11 +1,17 @@
-// Go up 4 levels to reach front/public/
 import gameData from '../../../../public/gameData.json'
-// Go up 3 levels to reach front/src/types (adjusting to '../../types' if it sits in front/types)
-import { GameInfo } from '../../../types'
 import { Metadata } from 'next'
-// Go up 4 levels to reach front/components/
 import GameContent from '../../../../components/GameContent'
 
+// Declaring the type locally so it never fails to import
+export interface GameInfo {
+  slug: string
+  title: string
+  metaDescription: string
+  images?: string[]
+  [key: string]: any // Fallback for any other custom properties in your JSON
+}
+
+// 1. Generate paths for all games at build time
 export async function generateStaticParams() {
   const games = gameData as GameInfo[]
   return games.map((game) => ({
@@ -13,6 +19,7 @@ export async function generateStaticParams() {
   }))
 }
 
+// 2. Helper to find game data
 function getGamesBySlug(slug: string): GameInfo {
   const game = (gameData as GameInfo[]).find((g) => g.slug === slug)
   if (!game) {
@@ -21,8 +28,10 @@ function getGamesBySlug(slug: string): GameInfo {
   return game
 }
 
+// 3. Define params type for Next.js 15
 type Params = Promise<{ slug: string }>
 
+// 4. Generate metadata dynamically for each game
 export async function generateMetadata({ params }: { params: Params }): Promise<Metadata> {
   const { slug } = await params
   const gameInfo = getGamesBySlug(slug)
@@ -47,6 +56,7 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
   }
 }
 
+// 5. Main Page Component
 export default async function GamePage({ params }: { params: Params }) {
   const { slug } = await params
   const gameInfo = getGamesBySlug(slug)
