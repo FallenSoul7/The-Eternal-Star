@@ -1,9 +1,8 @@
 import gameData from '../../../../public/gameData.json'
-import { GameInfo } from '@/types'
+import { GameInfo } from '../../../types'
 import { Metadata } from 'next'
-import GameContent from '@/components/GameContent'
+import GameContent from '../../../components/GameContent'
 
-// 1. Generate static params for dynamic routing
 export async function generateStaticParams() {
   const games = gameData as GameInfo[]
   return games.map((game) => ({
@@ -11,7 +10,6 @@ export async function generateStaticParams() {
   }))
 }
 
-// 2. Helper function to find data
 function getGamesBySlug(slug: string): GameInfo {
   const game = (gameData as GameInfo[]).find((g) => g.slug === slug)
   if (!game) {
@@ -20,10 +18,8 @@ function getGamesBySlug(slug: string): GameInfo {
   return game
 }
 
-// 3. Define params type
 type Params = Promise<{ slug: string }>
 
-// 4. Generate Metadata
 export async function generateMetadata({ params }: { params: Params }): Promise<Metadata> {
   const { slug } = await params
   const gameInfo = getGamesBySlug(slug)
@@ -48,7 +44,6 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
   }
 }
 
-// 5. Page Component
 export default async function GamePage({ params }: { params: Params }) {
   const { slug } = await params
   const gameInfo = getGamesBySlug(slug)
