@@ -1,3 +1,4 @@
+import Link from 'next/link'
 import { Card, CardHeader, CardTitle, CardDescription } from './ui/card'
 
 interface GameCardProps {
@@ -9,7 +10,7 @@ interface GameCardProps {
 
 export default function GameCard({ title, imageUrl, slug, metaDescription }: GameCardProps) {
   return (
-    <a
+    <Link
       href={`/play/${slug}`}
       className="block group transition-transform duration-100 hover:scale-[1.02] h-full"
     >
@@ -31,7 +32,7 @@ export default function GameCard({ title, imageUrl, slug, metaDescription }: Gam
           </CardDescription>
         </CardHeader>
       </Card>
-    </a>
+    </Link>
   )
 }
 
@@ -41,7 +42,7 @@ export default function GameCard({ title, imageUrl, slug, metaDescription }: Gam
  */
 export function MiniGameCard({ title, imageUrl, slug, metaDescription }: GameCardProps) {
   return (
-    <a
+    <Link
       href={`/play/${slug}`}
       className="block group transition-transform duration-100 hover:scale-[1.02] h-full"
     >
@@ -63,7 +64,7 @@ export function MiniGameCard({ title, imageUrl, slug, metaDescription }: GameCar
           </CardDescription>
         </CardHeader>
       </Card>
-    </a>
+    </Link>
   )
 }
 
@@ -73,7 +74,7 @@ export function MiniGameCard({ title, imageUrl, slug, metaDescription }: GameCar
  */
 export function MicroGameCard({ title, imageUrl, slug }: Omit<GameCardProps, 'metaDescription'>) {
   return (
-    <a
+    <Link
       href={`/play/${slug}`}
       className="block group transition-transform duration-200 hover:scale-[1.03]"
     >
@@ -90,6 +91,6 @@ export function MicroGameCard({ title, imageUrl, slug }: Omit<GameCardProps, 'me
           </CardTitle>
         </div>
       </Card>
-    </a>
+    </Link>
   )
 }
