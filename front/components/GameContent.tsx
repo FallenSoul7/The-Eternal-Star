@@ -1,4 +1,3 @@
-// components/GameContent.tsx
 'use client'
 
 import { useState, useEffect } from 'react'
@@ -8,24 +7,45 @@ import { GameInfo } from '@/types'
 import gameData from '../public/gameData.json'
 import { MiniGameCard } from './GameCard'
 import Navbar from './Navbar'
+import { supabase } from '../src/supabaseClient'
 
 export default function GameContent({ gameInfo }: { gameInfo: GameInfo }) {
   const [isPlaying, setIsPlaying] = useState(false)
-  const [playerName, setPlayerName] = useState<string>('')
+  const [playerName, setPlayerName] = useState<string>('Guest')
+  const [loadingProfile, setLoadingProfile] = useState(true)
 
-  // Load player name from localStorage on component mount
+  // Fetch the logged-in user's true username from the database
   useEffect(() => {
-    const savedName = localStorage.getItem('playerName')
-    if (savedName) {
-      setPlayerName(savedName)
+    async function getProfileName() {
+      try {
+        const { data: { session } } = await supabase.auth.getSession()
+        
+        if (session?.user) {
+          // Look up the unique username mapped in your custom profiles table
+          const { data: profile, error } = await supabase
+            .from('profiles')
+            .select('username')
+            .eq('username', session.user.email?.split('@')[0]) // Fallback check strategy
+            .maybeSingle()
+
+          if (profile?.username) {
+            setPlayerName(profile.username)
+          } else if (session.user.user_metadata?.username) {
+            // Backup fallback to metadata
+            setPlayerName(session.user.user_metadata.username)
+          }
+        }
+      } catch (err) {
+        console.error('Error loading account profile name:', err)
+      } finally {
+        setLoadingProfile(false)
+      }
     }
+
+    getProfileName()
   }, [])
 
   const handlePlayClick = () => {
-    // Save player name to localStorage
-    if (playerName.trim()) {
-      localStorage.setItem('playerName', playerName.trim())
-    }
     setIsPlaying(true)
   }
 
@@ -39,7 +59,7 @@ export default function GameContent({ gameInfo }: { gameInfo: GameInfo }) {
           <div className="flex flex-col lg:flex-row gap-8 mb-12">
             {/* Image Section - Larger and Clickable */}
             <div className="lg:w-2/3 cursor-pointer" onClick={handlePlayClick}>
-              <div className="relative group rounded-2xl overflow-hidden shadow-xl hover:shadow-2xl transition-shadow duration-300  ">
+              <div className="relative group rounded-2xl overflow-hidden shadow-xl hover:shadow-2xl transition-shadow duration-300">
                 <img
                   src={gameInfo.imageUrl}
                   alt={`${gameInfo.title} cover`}
@@ -48,7 +68,7 @@ export default function GameContent({ gameInfo }: { gameInfo: GameInfo }) {
 
                 {/* Online Badge */}
                 <div className="absolute top-4 left-4 bg-white/90 backdrop-blur-sm rounded-xl px-3 py-1.5 flex items-center space-x-2 shadow-sm">
-                  <div className="w-2 h-2 bg-green-500 rounded-full"></div> {/* Green dot */}
+                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
                   <span className="text-sm font-medium text-gray-800">Online</span>
                 </div>
                 {/* Gradient Overlay */}
@@ -75,35 +95,30 @@ export default function GameContent({ gameInfo }: { gameInfo: GameInfo }) {
               </div>
             </div>
 
-            {/* Content Section - Smaller */}
+            {/* Content Section - Upgraded to read account data */}
             <div className="lg:w-1/3 flex flex-col justify-center space-y-6">
               <h1 className="text-4xl lg:text-5xl font-bold text-gray-900">{gameInfo.title}</h1>
               <p className="text-gray-600 text-lg leading-relaxed">{gameInfo.metaDescription}</p>
+              
               <div className="flex flex-col space-y-4">
-                {/* Player Name Input */}
-                <div className="flex flex-col space-y-2">
-                  <label htmlFor="playerName" className="text-sm font-medium text-gray-700">
-                    Your Player Name
-                  </label>
-                  <input
-                    type="text"
-                    id="playerName"
-                    value={playerName}
-                    onChange={(e) => setPlayerName(e.target.value)}
-                    placeholder="Enter your name"
-                    maxLength={20}
-                    className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                  />
+                <div className="bg-gray-100 p-4 rounded-xl border border-gray-200">
+                  <p className="text-xs font-bold text-gray-500 uppercase tracking-wide">Playing As Account</p>
+                  <p className="text-xl font-black text-blue-600 mt-1 animate-pulse">
+                    {loadingProfile ? 'Loading character...' : playerName}
+                  </p>
                 </div>
+
                 <button
                   onClick={handlePlayClick}
-                  className="bg-blue-600 hover:bg-blue-500 text-white px-8 py-3 rounded-xl font-bold text-lg transition-all duration-300 transform hover:scale-105 inline-block text-center shadow-lg hover:shadow-xl"
+                  disabled={loadingProfile}
+                  className="bg-blue-600 hover:bg-blue-500 text-white px-8 py-3 rounded-xl font-bold text-lg transition-all duration-300 transform hover:scale-105 inline-block text-center shadow-lg hover:shadow-xl disabled:bg-gray-400 disabled:scale-100"
                 >
-                  Play Now →
+                  {loadingProfile ? 'Syncing Profile...' : 'Play Now →'}
                 </button>
               </div>
             </div>
           </div>
+
           {/* Related Games */}
           <section className="w-full">
             <h2 className="text-2xl font-bold text-gray-900 mb-6 px-4 sm:px-0">More Games</h2>
@@ -113,6 +128,7 @@ export default function GameContent({ gameInfo }: { gameInfo: GameInfo }) {
               ))}
             </div>
           </section>
+
           {/* Markdown Content */}
           <section className="w-full mt-12 bg-white p-4 md:p-8 rounded-2xl drop-shadow-sm border border-gray-200">
             <div className="prose max-w-none">
