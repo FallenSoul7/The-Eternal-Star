@@ -1,7 +1,7 @@
 import type { Metadata, Viewport } from 'next'
 import { Inter } from 'next/font/google'
 // Natively imports the globals.css file sitting in the same folder
-import './globals.css'
+import '@/app/globals.css'
 
 const inter = Inter({ 
   subsets: ['latin'],
