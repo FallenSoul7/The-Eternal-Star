@@ -62,13 +62,14 @@ export default function GamePlayer({ playerName, ...gameInfo }: GamePlayerProps)
         // Grab the map ID/Title (fallback to 'football' if missing)
         // Convert to lowercase and replace spaces with hyphens for the URL
         const rawMapName = (gameInfo as any).id || (gameInfo as any).title || 'football'
-        const mapSlug = String(rawMapName).toLowerCase().replace(/\s+/
+        const mapSlug = String(rawMapName).toLowerCase().replace(/\s+/g, '-')
+        
+        // This sends BOTH the map name and the specific port to the gateway dynamically
+        const gatewayPath = `${mapSlug}/${gameInfo.websocketPort}`
 
         // Passing as `any` to bypass TypeScript in case Game.getInstance strictly expects a number
         const game = Game.getInstance(gatewayPath as any, refContainer)
         // -----------------------------------
-// This sends BOTH the map name and the specific port to the gateway dynamically
-const gatewayPath = `${mapSlug}/${gameInfo.websocketPort}`
 
         game.hud.passChatState(setMessages)
         
@@ -91,7 +92,7 @@ const gatewayPath = `${mapSlug}/${gameInfo.websocketPort}`
         if (isMounted) {
           setIsLoading(false)
           setConnectionError(
-            `Failed to connect to the Gateway Server on port 8000. Ensure the proxy is running.`
+            `Failed to connect to the Gateway Server. Ensure the proxy is running.`
           )
         }
       }
