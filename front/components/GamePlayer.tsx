@@ -1,4 +1,5 @@
 'use client'
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { useEffect, useRef, useState } from 'react'
 import { Game } from '@/game/Game'
@@ -71,7 +72,6 @@ export default function GamePlayer({ playerName, ...gameInfo }: GamePlayerProps)
       isMounted = false
       if (activeGame) {
         console.log('Component unmounting. Killing active websocket layers...')
-        // Bypass strict TS checking for optional engine disconnect methods
         const gameObj = activeGame as any
         if (typeof gameObj.disconnect === 'function') {
           gameObj.disconnect()
@@ -99,7 +99,6 @@ export default function GamePlayer({ playerName, ...gameInfo }: GamePlayerProps)
     if (!gameInstance) return
     
     try {
-      // Bypass strict TS checking for dynamic engine reset fallbacks
       const gameObj = gameInstance as any
       if (typeof gameObj.resetPlayer === 'function') {
         gameObj.resetPlayer()
@@ -121,7 +120,6 @@ export default function GamePlayer({ playerName, ...gameInfo }: GamePlayerProps)
     if (!gameInstance) return
     
     try {
-      // Bypass strict TS checking for dynamic input hooks
       const gameObj = gameInstance as any
       if (gameObj.player && gameObj.player.input) {
         gameObj.player.input.jump = isActive
@@ -145,10 +143,8 @@ export default function GamePlayer({ playerName, ...gameInfo }: GamePlayerProps)
         touchAction: 'none'         
       }}
     >
-      {/* LOADING CONTROLLER STAGE */}
       {isLoading && <LoadingScreen />}
 
-      {/* ERROR HANDLERS OVERLAY STAGE */}
       {connectionError && (
         <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-[#09090f]/95 backdrop-blur-md px-6 text-center animate-fade-in">
           <div className="p-4 bg-red-500/10 border border-red-500/20 text-red-400 rounded-full mb-4">
@@ -182,7 +178,6 @@ export default function GamePlayer({ playerName, ...gameInfo }: GamePlayerProps)
         </div>
       )}
 
-      {/* SYSTEM GEAR BUTTON (TOP LEFT) */}
       {gameInstance && !isLoading && !connectionError && !isSettingsOpen && (
         <button
           onClick={() => setIsSettingsOpen(true)}
@@ -192,10 +187,8 @@ export default function GamePlayer({ playerName, ...gameInfo }: GamePlayerProps)
         </button>
       )}
 
-      {/* FULLSCREEN TRANSPARENT DARK SETTINGS OVERLAY */}
       {isSettingsOpen && (
         <div className="absolute inset-0 z-40 flex items-center justify-center bg-black/60 backdrop-blur-sm pointer-events-auto animate-fade-in">
-          {/* SYSTEM BUTTON X (TOP LEFT OF SCREEN OVERLAY) */}
           <button
             onClick={() => setIsSettingsOpen(false)}
             className="absolute top-4 left-4 p-2.5 bg-gray-900/90 border border-gray-800 hover:bg-gray-800 rounded-xl text-gray-400 hover:text-white font-medium transition-colors"
@@ -203,7 +196,6 @@ export default function GamePlayer({ playerName, ...gameInfo }: GamePlayerProps)
             X
           </button>
 
-          {/* ACTION BUTTONS MAIN HUB CONTAINER */}
           <div className="flex flex-col gap-4 w-full max-w-xs px-4">
             <Button
               variant="default"
@@ -226,14 +218,12 @@ export default function GamePlayer({ playerName, ...gameInfo }: GamePlayerProps)
         </div>
       )}
 
-      {/* 3D WEBGL GRAPHICS VIEWPORT CANVAS CONTAINER */}
       <div 
         ref={refContainer} 
         className="absolute inset-0 w-full h-full z-10"
         style={{ width: '100%', height: '100%', display: 'block' }}
       />
 
-      {/* HEADS UP HUD INTERFACE DISPLAY LAYER */}
       {gameInstance && !isLoading && !connectionError && (
         <div className="absolute inset-0 z-20 pointer-events-none">
           <GameHud
@@ -242,7 +232,6 @@ export default function GamePlayer({ playerName, ...gameInfo }: GamePlayerProps)
             gameInstance={gameInstance}
           />
           
-          {/* FLOATING ACTION INTERFACE FOR MOBILE HANDLERS (JUMP BUG SAFETY PATCH) */}
           <div className="absolute bottom-6 right-6 pointer-events-auto sm:hidden">
             <button
               onTouchStart={() => sendJumpSignal(true)}
