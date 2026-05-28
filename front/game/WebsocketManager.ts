@@ -19,9 +19,13 @@ export class WebSocketManager {
   private serverUrl: string
 
   timeSinceLastServerUpdate: number = 0
-  constructor(game: Game, port: number = 8001) {
+  
+  // ALLOW STRING OR NUMBER FOR GATEWAY ROUTING
+  constructor(game: Game, port: number | string = 8001) {
     // Set the serverUrl based on the environment
     const baseUrl = process.env.NEXT_PUBLIC_SERVER_URL ?? 'ws://localhost'
+    
+    // If port is "8000/football", this safely outputs "ws://localhost:8000/football"
     this.serverUrl = `${baseUrl}:${port}`
 
     this.addMessageHandler(ServerMessageType.FIRST_CONNECTION, (message) => {
@@ -66,6 +70,7 @@ export class WebSocketManager {
       }
     })
   }
+  
   disconnect() {
     if (this.websocket) {
       this.websocket.close()
@@ -107,6 +112,7 @@ export class WebSocketManager {
       )
     }
   }
+  
   private isConnected(): boolean {
     return this.websocket != null && this.websocket.readyState === WebSocket.OPEN
   }
