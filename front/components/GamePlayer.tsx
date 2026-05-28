@@ -111,7 +111,8 @@ export default function GamePlayer({ playerName, ...gameInfo }: GamePlayerProps)
       }
       purgeGameEngineUI()
     }
-  }, [gameInfo, playerName])
+    }, [gameInfo.id, gameInfo.title, gameInfo.websocketPort, playerName])
+
 
   const handleRetry = () => {
     retryCount.current += 1
