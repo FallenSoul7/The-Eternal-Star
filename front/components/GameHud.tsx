@@ -4,7 +4,6 @@ import { Joystick } from 'react-joystick-component'
 import { Game } from '@/game/Game'
 import { SerializedMessageType } from '@shared/network/server/serialized'
 import { MessageComponent } from '@shared/component/MessageComponent'
-import { Maximize } from 'lucide-react'
 import { MicroGameCard } from './GameCard'
 import { GameInfo } from '@/types'
 import gameData from '../public/gameData.json'
@@ -35,43 +34,56 @@ export default function GameHud({
     scrollToBottom()
   }, [messageComponents])
 
-  // Handle notifications from chat messages
+  // Automatically trigger browser fullscreen mode on first mobile interaction
+  useEffect(() => {
+    const triggerFullscreen = () => {
+      const element = document.documentElement as any
+      if (!document.fullscreenElement && !document.webkitFullscreenElement) {
+        if (element.requestFullscreen) {
+          element.requestFullscreen().catch(() => {})
+        } else if (element.webkitRequestFullscreen) {
+          element.webkitRequestFullscreen().catch(() => {})
+        }
+      }
+    }
+
+    window.addEventListener('touchstart', triggerFullscreen, { passive: true })
+    window.addEventListener('click', triggerFullscreen, { passive: true })
+
+    return () => {
+      window.removeEventListener('touchstart', triggerFullscreen)
+      window.removeEventListener('click', triggerFullscreen)
+    }
+  }, [])
+
   useEffect(() => {
     if (!messageComponents || messageComponents.length === 0) return
 
-    // Process new messages for notifications
     messageComponents.forEach((messageComponent, index) => {
       const messageType = messageComponent.messageType
       const messageId = messageComponent.timestamp
 
-      // Skip if we've already processed this message
       if (processedMessagesRef.current.has(messageId)) {
         return
       }
 
-      // Only process global notifications
-      // Check if the message is a notification type
       if (
         messageType === SerializedMessageType.GLOBAL_NOTIFICATION ||
         (messageType === SerializedMessageType.TARGETED_NOTIFICATION &&
           gameInstance?.currentPlayerEntityId &&
           messageComponent.targetPlayerIds?.includes(gameInstance?.currentPlayerEntityId))
       ) {
-        // Mark as processed
         processedMessagesRef.current.add(messageId)
 
-        // Add new notification
         const newNotification = {
-          id: Date.now() + index, // Unique ID
+          id: Date.now() + index,
           content: messageComponent.content,
           author: messageComponent.author,
           timestamp: Date.now(),
         }
 
-        // Only show one at a time for now
         setNotifications([newNotification])
 
-        // Remove notification after 5 seconds
         setTimeout(() => {
           setNotifications((prev) => prev.filter((n) => n.id !== newNotification.id))
         }, 5000)
@@ -79,25 +91,15 @@ export default function GameHud({
     })
   }, [messageComponents, gameInstance?.currentPlayerEntityId])
 
-  const handleFullscreenClick = () => {
-    if (document.fullscreenElement) {
-      document.exitFullscreen()
-    } else {
-      document.documentElement.requestFullscreen()
-    }
-  }
-
-  // Filter messages based on type and target
   const getFilteredMessages = () => {
     if (!messageComponents || messageComponents.length === 0) return []
 
     return messageComponents.filter((message) => {
       const messageType = message.messageType
       const targetPlayerIds = message.targetPlayerIds || []
-      // Show global chat messages
+      
       if (messageType === SerializedMessageType.GLOBAL_CHAT) return true
 
-      // Show targeted chat messages if player is in target list
       if (
         messageType === SerializedMessageType.TARGETED_CHAT &&
         gameInstance?.currentPlayerEntityId
@@ -105,7 +107,6 @@ export default function GameHud({
         return targetPlayerIds.includes(gameInstance?.currentPlayerEntityId)
       }
 
-      // Don't show notifications in chat
       if (
         messageType === SerializedMessageType.GLOBAL_NOTIFICATION ||
         messageType === SerializedMessageType.TARGETED_NOTIFICATION
@@ -116,8 +117,6 @@ export default function GameHud({
       return true
     })
   }
-
-  // Add CSS for animations
 
   return (
     <div
@@ -147,7 +146,6 @@ export default function GameHud({
       </div>
 
       <div className="absolute bottom-4 right-4 bg-black bg-opacity-20 rounded-xl p-4 z-50 hidden lg:flex flex-col w-[360px] pointer-events-auto space-y-2">
-        {/* Other games cards mini section */}
         <div className="grid grid-cols-4 gap-3">
           {gameData.slice(0, 4).map((game: GameInfo) => (
             <MicroGameCard
@@ -174,13 +172,7 @@ export default function GameHud({
                   }`}
                 >
                   <p className="text-sm break-words">
-                    <span
-                      className={`font-medium ${
-                        messageComponent.messageType === SerializedMessageType.TARGETED_CHAT
-                          ? 'text-gray-1000'
-                          : ''
-                      }`}
-                    >
+                    <span className="font-medium">
                       {messageComponent.author}
                     </span>
                     : {messageComponent.content}
@@ -198,18 +190,13 @@ export default function GameHud({
             if (e.key === 'Enter') {
               sendMessage(e.currentTarget.value)
               e.currentTarget.value = ''
-              e.currentTarget.blur() // Remove focus from the input
+              e.currentTarget.blur()
             }
           }}
         />
       </div>
 
       <div className="flex lg:hidden pointer-events-auto">
-        <div className="absolute top-2 right-2">
-          <button onClick={handleFullscreenClick} className="text-white hover:text-gray-300">
-            <Maximize className="size-16" />
-          </button>
-        </div>
         <div className="absolute bottom-12 left-12">
           <Joystick
             size={100}
@@ -223,14 +210,12 @@ export default function GameHud({
           <button
             className="bg-gray-500 bg-opacity-20 text-white font-bold py-4 px-8 rounded-full shadow-lg transition-transform transform hover:bg-gray-600 hover:bg-opacity-100 focus:bg-green-600 focus:bg-opacity-100 focus:outline-none active:translate-y-1 w-24 h-24 flex items-center justify-center select-none touch-manipulation"
             
-            // PRESS DOWN: Signal jump start
             onTouchStart={(e) => {
-              e.preventDefault(); // Prevents double-firing on touch screens
+              e.preventDefault();
               if (gameInstance) gameInstance.inputManager.inputState.s = true;
             }}
             onMouseDown={() => gameInstance && (gameInstance.inputManager.inputState.s = true)}
             
-            // LET GO: Bulletproof signals to stop jumping
             onTouchEnd={() => gameInstance && (gameInstance.inputManager.inputState.s = false)}
             onTouchCancel={() => gameInstance && (gameInstance.inputManager.inputState.s = false)}
             onMouseUp={() => gameInstance && (gameInstance.inputManager.inputState.s = false)}
