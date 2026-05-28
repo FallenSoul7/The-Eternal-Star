@@ -62,14 +62,13 @@ export default function GamePlayer({ playerName, ...gameInfo }: GamePlayerProps)
         // Grab the map ID/Title (fallback to 'football' if missing)
         // Convert to lowercase and replace spaces with hyphens for the URL
         const rawMapName = (gameInfo as any).id || (gameInfo as any).title || 'football'
-        const mapSlug = String(rawMapName).toLowerCase().replace(/\s+/g, '-')
-        
-        // We force the connection through the Gateway (8000) and append the map name
-        const gatewayPath = `8000/${mapSlug}`
+        const mapSlug = String(rawMapName).toLowerCase().replace(/\s+/
 
         // Passing as `any` to bypass TypeScript in case Game.getInstance strictly expects a number
         const game = Game.getInstance(gatewayPath as any, refContainer)
         // -----------------------------------
+// This sends BOTH the map name and the specific port to the gateway dynamically
+const gatewayPath = `${mapSlug}/${gameInfo.websocketPort}`
 
         game.hud.passChatState(setMessages)
         
