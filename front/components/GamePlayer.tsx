@@ -58,16 +58,16 @@ export default function GamePlayer({ playerName, ...gameInfo }: GamePlayerProps)
       setConnectionError(null)
 
       try {
-        // --- GATEWAY ARCHITECTURE UPDATE ---
-        // Grab the map ID/Title (fallback to 'football' if missing)
-        // Convert to lowercase and replace spaces with hyphens for the URL
-        const rawMapName = (gameInfo as any).id || (gameInfo as any).title || 'football'
-        const mapSlug = String(rawMapName).toLowerCase().replace(/\s+/g, '-')
+        // --- DYNAMIC ID & SLUG GATEWAY ROUTING ---
+        // Grab the explicit unique id and the URL slug from our updated structures
+        const gameId = gameInfo.id || 'game-football-001'
+        const slug = gameInfo.slug || 'football'
         
-        // This sends BOTH the map name and the specific port to the gateway dynamically
-        const gatewayPath = `${mapSlug}/${gameInfo.websocketPort}`
+        // Combine everything into the path gateway string including the port
+        // Looks like: game-football-001/football/8003
+        const gatewayPath = `${gameId}/${slug}/${gameInfo.websocketPort}`
 
-        // Passing as `any` to bypass TypeScript in case Game.getInstance strictly expects a number
+        // Passing as `any` to bypass TypeScript strict engine checks if necessary
         const game = Game.getInstance(gatewayPath as any, refContainer)
         // -----------------------------------
 
@@ -111,7 +111,8 @@ export default function GamePlayer({ playerName, ...gameInfo }: GamePlayerProps)
       }
       purgeGameEngineUI()
     }
-    }, [gameInfo.id, gameInfo.title, gameInfo.websocketPort, playerName])
+    // Updated dependency arrays to precisely look for the new schema changes
+  }, [gameInfo.id, gameInfo.slug, gameInfo.websocketPort, playerName])
 
 
   const handleRetry = () => {
