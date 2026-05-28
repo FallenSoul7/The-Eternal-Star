@@ -1,5 +1,5 @@
 export interface GameInfo {
-  id?: string // Added to support your gateway logic
+  id: string // Added to support your gateway logic
   title: string
   slug: string
   imageUrl: string
