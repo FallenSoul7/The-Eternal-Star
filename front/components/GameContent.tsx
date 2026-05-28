@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 'use client'
 
 import { useState, useEffect } from 'react'
@@ -8,7 +9,7 @@ import gameData from '../public/gameData.json'
 import { MiniGameCard } from './GameCard'
 import Navbar from './Navbar'
 import { supabase } from '../src/supabaseClient'
-import { Game } from '@/game/Game' // Imported to smash old server port cache instances
+import { Game } from '@/game/Game'
 
 export default function GameContent({ gameInfo }: { gameInfo: GameInfo }) {
   const [isPlaying, setIsPlaying] = useState(false)
