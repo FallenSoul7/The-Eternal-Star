@@ -26,7 +26,7 @@ import { MutableRefObject } from 'react'
 import { ClientMessageType, SetPlayerNameMessage } from '@shared/network/client'
 
 export class Game {
-  private static instance: Game
+  private static instance: Game | undefined // Updated to allow resetting
   entityManager = EntityManager
   currentPlayerEntityId: number | undefined
   private lastRenderTime = Date.now()
@@ -51,6 +51,7 @@ export class Game {
   renderer: Renderer
   hud: Hud
   private identifyFollowedMeshSystem: IdentifyFollowedMeshSystem
+  
   private constructor(gameContainerRef: MutableRefObject<any>, port?: number) {
     this.syncComponentSystem = new SyncComponentsSystem(this)
     this.syncPositionSystem = new SyncPositionSystem()
@@ -90,6 +91,42 @@ export class Game {
     await this.websocketManager.connect()
     this.renderer.appendChild()
     this.renderer.setAnimationLoop(this.loopFunction)
+  }
+
+  /**
+   * Completely tears down the active game engine.
+   * Stops rendering, cuts the server connection, and destroys the Singleton instance
+   * so switching maps loads a totally fresh port and environment.
+   */
+  disconnect() {
+    // 1. Stop the render loop instantly
+    if (this.renderer) {
+      this.renderer.setAnimationLoop(null)
+    }
+
+    // 2. Safely close the old websocket port
+    if (this.websocketManager) {
+      if (typeof (this.websocketManager as any).disconnect === 'function') {
+        (this.websocketManager as any).disconnect()
+      } else if (typeof (this.websocketManager as any).close === 'function') {
+        (this.websocketManager as any).close()
+      }
+    }
+
+    // 3. Nuke the old entities so the new map starts clean
+    try {
+      const em = EntityManager.getInstance()
+      if (typeof (em as any).clearEntities === 'function') {
+        (em as any).clearEntities()
+      } else if (typeof (em as any).clear === 'function') {
+        (em as any).clear()
+      }
+    } catch (e) {
+      console.warn('Could not clear entities on disconnect:', e)
+    }
+
+    // 4. Destroy the Singleton instance
+    Game.instance = undefined
   }
 
   /**
