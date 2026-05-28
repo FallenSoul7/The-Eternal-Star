@@ -9,10 +9,13 @@ export class LoadManager {
   dracoLoader = new DRACOLoader()
   gltfLoader = new GLTFLoader()
 
+// Replace your old constructor with this one:
   private constructor() {
-    this.dracoLoader.setDecoderPath('/draco/') // Replace with the actual path to the Draco decoder
+    // ✅ FIXED: Instead of looking for a missing local folder, use Google's official cloud decoder!
+    this.dracoLoader.setDecoderPath('https://www.gstatic.com/draco/versioned/decoders/1.5.5/')
     this.gltfLoader.setDRACOLoader(this.dracoLoader)
   }
+
 
   static getInstance(): LoadManager {
     if (!LoadManager.instance) {
