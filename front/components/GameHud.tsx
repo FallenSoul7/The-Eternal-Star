@@ -221,11 +221,20 @@ export default function GameHud({
         </div>
         <div className="absolute bottom-12 right-12">
           <button
-            className="bg-gray-500 bg-opacity-20 text-white font-bold py-4 px-8 rounded-full shadow-lg transition-transform transform hover:bg-gray-600 hover:bg-opacity-100 focus:bg-green-600 focus:bg-opacity-100 focus:outline-none active:translate-y-1 w-24 h-24 flex items-center justify-center"
-            onTouchStart={() => gameInstance && (gameInstance.inputManager.inputState.s = true)}
+            className="bg-gray-500 bg-opacity-20 text-white font-bold py-4 px-8 rounded-full shadow-lg transition-transform transform hover:bg-gray-600 hover:bg-opacity-100 focus:bg-green-600 focus:bg-opacity-100 focus:outline-none active:translate-y-1 w-24 h-24 flex items-center justify-center select-none touch-manipulation"
+            
+            // PRESS DOWN: Signal jump start
+            onTouchStart={(e) => {
+              e.preventDefault(); // Prevents double-firing on touch screens
+              if (gameInstance) gameInstance.inputManager.inputState.s = true;
+            }}
             onMouseDown={() => gameInstance && (gameInstance.inputManager.inputState.s = true)}
+            
+            // LET GO: Bulletproof signals to stop jumping
             onTouchEnd={() => gameInstance && (gameInstance.inputManager.inputState.s = false)}
-            onMouseOut={() => gameInstance && (gameInstance.inputManager.inputState.s = false)}
+            onTouchCancel={() => gameInstance && (gameInstance.inputManager.inputState.s = false)}
+            onMouseUp={() => gameInstance && (gameInstance.inputManager.inputState.s = false)}
+            onMouseLeave={() => gameInstance && (gameInstance.inputManager.inputState.s = false)}
           >
             <span className="pointer-events-none">Jump</span>
           </button>
