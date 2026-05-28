@@ -17,11 +17,29 @@ import { FloatingText } from '../ecs/entity/FloatingText.js'
 import { MapWorld } from '../ecs/entity/MapWorld.js'
 import { Sphere } from '../ecs/entity/Sphere.js'
 import { TriggerCube } from '../ecs/entity/TriggerCube.js'
+import { Mesh } from '../ecs/entity/Mesh.js' // ✅ Added Mesh import to spawn your cat/character
 
-// ✅ FIXED: Using your live Supabase link for the world map
-new MapWorld('https://qynwojpluhxhvwiqmstz.supabase.co/storage/v1/object/public/game-assets/Untitled%20folder/Car.glb')
+// ✅ FIXED: Loaded the FlatMap so your player has ground to stand on
+new MapWorld('https://qynwojpluhxhvwiqmstz.supabase.co/storage/v1/object/public/game-assets/FlatMap.glb')
 
-const ballSpawnPosition = { x: 0, y: -20, z: -350 }
+// ✅ FIXED: Spawning your Custom Character in the world
+const customCharacter = new Mesh({
+  position: { x: 5, y: 5, z: -10 }, 
+  meshUrl: 'https://qynwojpluhxhvwiqmstz.supabase.co/storage/v1/object/public/game-assets/Character.glb',
+  physicsProperties: { mass: 1, enableCcd: true },
+})
+customCharacter.entity.addNetworkComponent(new TextComponent(customCharacter.entity.id, 'Custom Character', 0, 2, 0))
+
+// ✅ FIXED: Spawning your Cat pet!
+const petCat = new Mesh({
+  position: { x: -5, y: 5, z: -10 },
+  meshUrl: 'https://qynwojpluhxhvwiqmstz.supabase.co/storage/v1/object/public/game-assets/Cat.glb',
+  physicsProperties: { mass: 0.5, enableCcd: true },
+})
+petCat.entity.addNetworkComponent(new TextComponent(petCat.entity.id, 'Meow', 0, 2, 0))
+
+// ✅ FIXED: Brought the ball to the center so it doesn't fall off the flat map
+const ballSpawnPosition = { x: 0, y: 10, z: -10 }
 
 const ball = new Sphere({
   radius: 1.4,
@@ -30,8 +48,8 @@ const ball = new Sphere({
     y: ballSpawnPosition.y,
     z: ballSpawnPosition.z,
   },
-  // ✅ FIXED: Changed to your working asset link so it downloads successfully
-  meshUrl: 'https://qynwojpluhxhvwiqmstz.supabase.co/storage/v1/object/public/game-assets/Untitled%20folder/Car.glb',
+  // ✅ FIXED: Restored the proper Ball URL
+  meshUrl: 'https://notbloxo.fra1.cdn.digitaloceanspaces.com/Notblox-Assets/base/Ball.glb',
   physicsProperties: {
     mass: 1.5,
     enableCcd: true,
@@ -45,7 +63,7 @@ const ball = new Sphere({
 })
 
 // Score display and management
-const scoreText = new FloatingText('🔴 0 - 0 🔵', 0, 0, -450, 200)
+const scoreText = new FloatingText('🔴 0 - 0 🔵', 0, 10, -50, 200)
 let redScore = 0
 let blueScore = 0
 
@@ -99,7 +117,9 @@ function createTeamTrigger(x: number, y: number, z: number, color: string, spawn
       if (collidedWithEntity.getComponent(PlayerComponent)) {
         EventSystem.addEvent(new ColorEvent(collidedWithEntity.id, color))
         const playerBody = collidedWithEntity.getComponent(DynamicRigidBodyComponent)!.body!
-        playerBody.setTranslation(new Rapier.Vector3(spawnX, 5, -350), true)
+        
+        // ✅ FIXED: Changed spawn to center so players don't teleport into the void
+        playerBody.setTranslation(new Rapier.Vector3(spawnX, 5, 0), true)
         playerBody.setLinvel(new Rapier.Vector3(0, 0, 0), true)
 
         const isRedTeam = color === '#f0513c'
@@ -118,8 +138,9 @@ function createTeamTrigger(x: number, y: number, z: number, color: string, spawn
   )
 }
 
-createTeamTrigger(-24, -4, -29, '#f0513c', -80) // Red team
-createTeamTrigger(24, -4, -29, '#3c9cf0', 80) // Blue team
+// ✅ FIXED: Brought team triggers closer to center map
+createTeamTrigger(-24, 0, -10, '#f0513c', -30) // Red team
+createTeamTrigger(24, 0, -10, '#3c9cf0', 30) // Blue team
 
 function handleGoal(scoringTeam: 'red' | 'blue') {
   if (scoringTeam === 'blue') blueScore++
@@ -141,11 +162,11 @@ function handleGoal(scoringTeam: 'red' | 'blue') {
   body.setLinvel(new Rapier.Vector3(0, 0, 0), true)
 }
 
-// Create goal triggers
+// ✅ FIXED: Brought goal zones closer to the center
 new TriggerCube(
-  -120,
-  -40,
-  -350,
+  -80,
+  -5,
+  -10,
   5,
   10,
   13,
@@ -154,9 +175,9 @@ new TriggerCube(
   false
 )
 new TriggerCube(
-  120,
-  -40,
-  -350,
+  80,
+  -5,
+  -10,
   5,
   10,
   13,
