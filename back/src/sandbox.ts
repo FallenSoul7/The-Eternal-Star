@@ -4,33 +4,34 @@ import { pathToFileURL } from 'url'
 import { startGameLoop } from './index.js'
 import uWS from 'uWebSockets.js'
 
-const PORT = Number(process.env.PORT) || 8003
+// Pre-load all game scripts into memory right when the server starts
+async function preloadAllMaps() {
+  const scripts = [
+    'defaultScript.ts',
+    'obbyscript.ts',
+    'footballscript.ts',
+    'petsimscript.ts'
+  ]
 
-// Match each port directly to its game script
-const portScriptMapping: Record<number, string> = {
-  8001: "defaultScript.ts",   // Test Server
-  8002: "obbyscript.ts",      // Obby
-  8003: "footballscript.ts",  // Football
-  8004: "petsimscript.ts"     // Pet Sim
+  console.log('\n[BOOT] Pre-loading all map scripts to prevent empty skybox lag...')
+  
+  for (const script of scripts) {
+    try {
+      const codePath = resolve(import.meta.dirname, 'scripts', script)
+      await import(pathToFileURL(codePath).href)
+      console.log(`[BOOT] ✅ Successfully Loaded: ${script}`)
+    } catch (err) {
+      // Logs the error but keeps the server alive if a file is missing or renamed
+      console.error(`[BOOT] ⚠️ Could not pre-load "${script}". Check your filename.`)
+    }
+  }
 }
 
-async function bootstrapServer() {
-  const scriptName = portScriptMapping[PORT] || "defaultScript.ts"
-  const codePath = resolve(import.meta.dirname, 'scripts', scriptName)
-  
-  console.log(`[BOOT] Server assigned to port ${PORT}`)
-  console.log(`[BOOT] Synchronously loading map logic: ${scriptName}`)
-  
-  try {
-    // Load the map assets and player rules BEFORE opening the network layers
-    await import(pathToFileURL(codePath).href)
-    console.log(`[BOOT] Map assets loaded successfully into engine memory.`)
-  } catch (err) {
-    console.error(`[FATAL BOOT ERROR] Failed to load game script: ${scriptName}`, err)
-    process.exit(1)
-  }
+async function startServer() {
+  // 1. Load your game worlds into memory first
+  await preloadAllMaps()
 
-  // Initialize your uWebSockets application
+  // 2. Start the uWebSockets app layers
   const app = uWS.App()
 
   app.ws('/*', {
@@ -49,27 +50,30 @@ async function bootstrapServer() {
     },
     
     open: (ws) => {
-      console.log('[Connection] Player joined the match instance securely.')
+      console.log('[Connection] Player joined a map instance.')
     },
     
     message: (ws, message, isBinary) => {
-      // Game stream processing handles connection actions automatically
+      // Game loop engine handles packet routing automatically
     },
     
     close: (ws, code, message) => {
-      console.log('[Disconnect] Player disconnected.')
+      console.log('[Disconnect] Player left.')
     }
   })
 
+  // Reads the environment port assigned by Render, or defaults to 8003
+  const PORT = Number(process.env.PORT) || 8003
+  
   app.listen(PORT, (token) => {
     if (token) {
-      console.log(`🚀 NotBlox Server successfully listening on port ${PORT}\n`)
+      console.log(`\n🚀 NotBlox Master Server Online! Listening on port ${PORT}\n`)
       startGameLoop()
     } else {
-      console.error(`❌ Fatal: Failed to open port allocation ${PORT}`)
+      console.error(`\n❌ Fatal: Failed to listen on port ${PORT}`)
     }
   })
 }
 
-// Fire up the startup pipeline
-bootstrapServer().catch((err) => console.error("[FATAL RUNTIME]", err))
+// Start the initialization sequence
+startServer().catch((err) => console.error('[FATAL RUNTIME ERROR]', err))
