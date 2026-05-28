@@ -9,13 +9,11 @@ export class LoadManager {
   dracoLoader = new DRACOLoader()
   gltfLoader = new GLTFLoader()
 
-// Replace your old constructor with this one:
   private constructor() {
-    // ✅ FIXED: Instead of looking for a missing local folder, use Google's official cloud decoder!
+    // ✅ FIXED: Using Google's cloud decoder so it never looks for a missing local folder
     this.dracoLoader.setDecoderPath('https://www.gstatic.com/draco/versioned/decoders/1.5.5/')
     this.gltfLoader.setDRACOLoader(this.dracoLoader)
   }
-
 
   static getInstance(): LoadManager {
     if (!LoadManager.instance) {
@@ -27,7 +25,7 @@ export class LoadManager {
   static glTFLoad(path: string): Promise<THREE.Mesh> {
     const instance = LoadManager.getInstance()
 
-    // // Check if the mesh is already in the cache
+    // Check if the mesh is already in the cache
     if (instance.cache.has(path)) {
       const cachedMesh = instance.cache.get(path)!
       const clonedMesh = instance.cloneMesh(cachedMesh)
@@ -39,26 +37,26 @@ export class LoadManager {
       instance.gltfLoader.load(
         path,
         (gltf) => {
-          // Extract the first mesh from the loaded model
           const mesh = instance.extractMesh(gltf)
           if (mesh) {
-            // Cache the original mesh
             instance.cache.set(path, mesh)
-            // Resolve with a clone of the mesh
             const clonedMesh = instance.cloneMesh(mesh)
             resolve(clonedMesh)
           } else {
-            reject(new Error('No mesh found in the GLTF model'))
+            // ✅ FIXED: Fallback mesh so the game doesn't crash if an asset is bad
+            console.warn(`No mesh found in model: ${path}. Creating fallback cube.`)
+            resolve(new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1)))
           }
         },
-        // called as loading progresses
         (xhr) => {
-          console.log((xhr.loaded / xhr.total) * 100 + '% loaded')
+          if (xhr.total > 0) {
+            console.log((xhr.loaded / xhr.total) * 100 + '% loaded')
+          }
         },
-        // called when loading has errors
         (error) => {
-          console.error('An error happened', error)
-          reject(error)
+          // ✅ FIXED: If a link breaks, log it, spawn a placeholder box, and KEEP LOADING the game!
+          console.error('Failed to load asset from path:', path, error)
+          resolve(new THREE.Mesh(new THREE.BoxGeometry(2, 2, 2)))
         }
       )
     })
@@ -67,7 +65,6 @@ export class LoadManager {
   private cloneMesh(mesh: THREE.Mesh): THREE.Mesh {
     const clonedMesh = SkeletonUtils.clone(mesh)
     clonedMesh.animations = mesh.animations
-    // Clone materials to avoid sharing the same material instance
     clonedMesh.traverse((child) => {
       if (child instanceof THREE.Mesh) {
         const material = child.material
@@ -82,7 +79,7 @@ export class LoadManager {
   }
 
   private extractMesh(gltf: any): THREE.Mesh | null {
-    let mesh: THREE.Mesh = new THREE.Mesh()
+    let mesh = new THREE.Mesh()
     mesh.add(gltf.scene)
     mesh.animations = gltf.animations
     return mesh
