@@ -39,7 +39,9 @@ export default function GameHud({
   useEffect(() => {
     const triggerFullscreen = () => {
       const element = document.documentElement as any
-      if (!document.fullscreenElement && !document.webkitFullscreenElement) {
+      const doc = document as any
+      
+      if (!doc.fullscreenElement && !doc.webkitFullscreenElement) {
         if (element.requestFullscreen) {
           element.requestFullscreen().catch(() => {})
         } else if (element.webkitRequestFullscreen) {
