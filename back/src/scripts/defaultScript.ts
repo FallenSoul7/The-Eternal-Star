@@ -23,9 +23,8 @@ function randomHexColor() {
   return '#' + '0'.repeat(6 - hex.length) + hex
 }
 
-// Load the game world
-// Can also be hosted on a github repo : https://github.com/iErcann/Notblox-Assets + https://rawcdn.githack.com
-new MapWorld('https://notbloxo.fra1.cdn.digitaloceanspaces.com/Notblox-Assets/world/FlatMap.glb')
+// ✅ FIXED: Loaded your working FlatMap so the default world has a floor
+new MapWorld('https://qynwojpluhxhvwiqmstz.supabase.co/storage/v1/object/public/game-assets/FlatMap.glb')
 
 // === Basic Entity Creation Examples ===
 
@@ -45,16 +44,14 @@ const basicSphereParams = {
 new Sphere(basicSphereParams)
 
 // === Interactive Trigger Zone Example ===
-// Creates an invisible trigger zone that detects when players enter/exit
 const triggerCube = new TriggerCube(
   -100,
   -5,
-  -200, // position
+  -200, 
   8,
   8,
-  8, // size
+  8, 
   (entity) => {
-    // onEnter callback
     if (entity.getComponent(PlayerComponent)) {
       console.log('Invisible trigger zone: Player entered the zone!')
       entity
@@ -63,19 +60,17 @@ const triggerCube = new TriggerCube(
     }
   },
   (entity) => {
-    // onExit callback
     if (entity.getComponent(PlayerComponent)) {
       console.log('Invisible trigger zone: Player left the zone!')
     }
   },
-  true // Set to true to see the trigger zone (useful for debugging)
+  true 
 )
 triggerCube.entity.addNetworkComponent(
   new TextComponent(triggerCube.entity.id, 'Trampoline', 0, 2, 0, 30)
 )
 
 // === Interactive Object Example ===
-// Create a cube that reacts to player collision
 for (let i = 0; i < 2; i++) {
   const interactiveCubeParams = {
     position: { x: 0, y: 5, z: -100 },
@@ -87,12 +82,9 @@ for (let i = 0; i < 2; i++) {
   const interactiveCube = new Cube(interactiveCubeParams)
   interactiveCube.entity.addComponent(
     new OnCollisionEnterEvent(interactiveCube.entity.id, (collidedWithEntity) => {
-      // Only react to players
       if (collidedWithEntity.getComponent(PlayerComponent)) {
-        // Change color of the cube on collision
         EventSystem.addEvent(new ColorEvent(interactiveCube.entity.id, randomHexColor()))
 
-        // Apply upward force
         const rigidBody = interactiveCube.entity.getComponent(DynamicRigidBodyComponent)
         if (rigidBody) {
           rigidBody.body!.applyImpulse(new Rapier.Vector3(0, 5000, 0), true)
@@ -102,15 +94,14 @@ for (let i = 0; i < 2; i++) {
   )
 }
 
-// Zombie
+// ✅ FIXED: Zombie now uses your working Character asset link
 const zombie = new Mesh({
   position: {
     x: -100,
     y: 10,
     z: 100,
   },
-  meshUrl:
-    'https://notbloxo.fra1.cdn.digitaloceanspaces.com/Notblox-Assets/character/MiniCharacter.glb',
+  meshUrl: 'https://qynwojpluhxhvwiqmstz.supabase.co/storage/v1/object/public/game-assets/Character.glb',
   physicsProperties: {
     mass: 1,
     angularDamping: 0.5,
@@ -188,34 +179,38 @@ for (let i = 1; i < 10; i++) {
     }
   }
 
+  // ✅ FIXED: Using your valid Car asset URL
   const car = new Car({
     position: { x, y, z },
     name: 'Weird Car',
-    meshUrl:
-      'https://notbloxo.fra1.cdn.digitaloceanspaces.com/Notblox-Assets/vehicle/CarNoWheel.glb',
+    meshUrl: 'https://qynwojpluhxhvwiqmstz.supabase.co/storage/v1/object/public/game-assets/Untitled%20folder/Car.glb',
     wheelRadius: wheelConfig,
     color: randomHexColor(),
   })
   car.entity.addComponent(new SpawnPositionComponent(car.entity.id, x, y, z))
 }
 
+// ✅ FIXED: Using your valid Car asset URL
 const noWheelCar = new Car({
   position: { x: 0, y: 5, z: -500 },
   name: 'Weird Car',
-  meshUrl: 'https://notbloxo.fra1.cdn.digitaloceanspaces.com/Notblox-Assets/vehicle/CarNoWheel.glb',
+  meshUrl: 'https://qynwojpluhxhvwiqmstz.supabase.co/storage/v1/object/public/game-assets/Untitled%20folder/Car.glb',
 })
 noWheelCar.entity.addComponent(new SpawnPositionComponent(noWheelCar.entity.id, 250, 20, -500))
 
+// ✅ FIXED: Using your valid Car asset URL
 const mainCar = new Car({
   position: { x: 0, y: 5, z: -500 },
   name: 'Weird Car',
-  meshUrl: 'https://notbloxo.fra1.cdn.digitaloceanspaces.com/Notblox-Assets/vehicle/EzCar.glb',
+  meshUrl: 'https://qynwojpluhxhvwiqmstz.supabase.co/storage/v1/object/public/game-assets/Untitled%20folder/Car.glb',
 })
 mainCar.entity.addComponent(new SpawnPositionComponent(mainCar.entity.id, 150, 20, -500))
 
-// Flying Car (different gravity scale, slow motion)
+// Flying Car 
+// ✅ FIXED: Using your valid Car asset URL
 new Car({
   position: { x: 0, y: 20, z: -500 },
+  meshUrl: 'https://qynwojpluhxhvwiqmstz.supabase.co/storage/v1/object/public/game-assets/Untitled%20folder/Car.glb',
   physicsProperties: {
     gravityScale: 0.05,
     enableCcd: true,
@@ -235,7 +230,8 @@ function spawnFootballBall() {
       y: ballSpawnPosition.y,
       z: ballSpawnPosition.z,
     },
-    meshUrl: 'https://notbloxo.fra1.cdn.digitaloceanspaces.com/Notblox-Assets/base/Ball.glb',
+    // ✅ FIXED: Swapped out dead link for your Cat asset link as a safe placeholder
+    meshUrl: 'https://qynwojpluhxhvwiqmstz.supabase.co/storage/v1/object/public/game-assets/Cat.glb',
     physicsProperties: {
       mass: 1,
       enableCcd: true,
@@ -282,23 +278,3 @@ function spawnFootballBall() {
 }
 
 spawnFootballBall()
-
-// === Create Multiple Objects Example ===
-// Creates a line of cubes with alternating colors
-// const colors = ['#ff0000', '#00ff00', '#0000ff']
-// for (let i = 0; i < 2; i++) {
-//   const cubeParams = {
-//     position: { x: i * 3, y: 5, z: -40 },
-//     size: { width: 1, height: 1, depth: 1 },
-//     color: colors[i % colors.length],
-//   }
-//   const cube = new Cube(cubeParams)
-//   cube.entity.addComponent(new RandomizeComponent(cube.entity.id))
-//   const sphereParams = {
-//     position: { x: i * 3, y: 5, z: -40 },
-//     radius: 1,
-//     color: colors[i % colors.length],
-//   }
-//   const sphere = new Sphere(sphereParams)
-//   sphere.entity.addComponent(new RandomizeComponent(sphere.entity.id))
-// }
