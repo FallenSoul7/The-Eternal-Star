@@ -71,9 +71,10 @@ export default function GamePlayer({ playerName, ...gameInfo }: GamePlayerProps)
       isMounted = false
       if (activeGame) {
         console.log('Component unmounting. Killing active websocket layers...')
-        // Invoking engine disconnect sequences if present
-        if (typeof activeGame.disconnect === 'function') {
-          activeGame.disconnect()
+        // Bypass strict TS checking for optional engine disconnect methods
+        const gameObj = activeGame as any
+        if (typeof gameObj.disconnect === 'function') {
+          gameObj.disconnect()
         }
       }
     }
@@ -84,10 +85,12 @@ export default function GamePlayer({ playerName, ...gameInfo }: GamePlayerProps)
     window.location.reload()
   }
 
-  // Action execution wrappers
   const handleLeaveGame = () => {
-    if (gameInstance && typeof gameInstance.disconnect === 'function') {
-      gameInstance.disconnect()
+    if (gameInstance) {
+      const gameObj = gameInstance as any
+      if (typeof gameObj.disconnect === 'function') {
+        gameObj.disconnect()
+      }
     }
     router.push('/')
   }
@@ -96,37 +99,36 @@ export default function GamePlayer({ playerName, ...gameInfo }: GamePlayerProps)
     if (!gameInstance) return
     
     try {
-      // 1. Structural fallbacks matching network engine patterns
-      if (typeof gameInstance.resetPlayer === 'function') {
-        gameInstance.resetPlayer()
-      } else if (gameInstance.player && typeof gameInstance.player.reset === 'function') {
-        gameInstance.player.reset()
-      } else if (typeof gameInstance.sendMessageToServer === 'function') {
-        // Fallback for authoritative network architectures
-        gameInstance.sendMessageToServer('player:reset', {})
-      } else if (gameInstance.hud && typeof gameInstance.hud.sendMessageToServer === 'function') {
-        gameInstance.hud.sendMessageToServer('player:reset', {})
+      // Bypass strict TS checking for dynamic engine reset fallbacks
+      const gameObj = gameInstance as any
+      if (typeof gameObj.resetPlayer === 'function') {
+        gameObj.resetPlayer()
+      } else if (gameObj.player && typeof gameObj.player.reset === 'function') {
+        gameObj.player.reset()
+      } else if (typeof gameObj.sendMessageToServer === 'function') {
+        gameObj.sendMessageToServer('player:reset', {})
+      } else if (gameObj.hud && typeof gameObj.hud.sendMessageToServer === 'function') {
+        gameObj.hud.sendMessageToServer('player:reset', {})
       }
     } catch (err) {
       console.error('Failed to trigger player respawn lifecycle:', err)
     }
     
-    // Close overlay instantly after triggering action
     setIsSettingsOpen(false)
   }
 
-  // TRIPLE SAFE JUMP INTERACTORS TO KILL STICKY JUMPING
   const sendJumpSignal = (isActive: boolean) => {
     if (!gameInstance) return
     
     try {
-      if (gameInstance.player && 'input' in gameInstance.player) {
-        gameInstance.player.input.jump = isActive
-      } else if (typeof gameInstance.setJumpInput === 'function') {
-        gameInstance.setJumpInput(isActive)
-      } else if (gameInstance.hud && typeof gameInstance.hud.sendMessageToServer === 'function') {
-        // If your engine maps controls over sockets
-        gameInstance.hud.sendMessageToServer('input:jump', { active: isActive })
+      // Bypass strict TS checking for dynamic input hooks
+      const gameObj = gameInstance as any
+      if (gameObj.player && gameObj.player.input) {
+        gameObj.player.input.jump = isActive
+      } else if (typeof gameObj.setJumpInput === 'function') {
+        gameObj.setJumpInput(isActive)
+      } else if (gameObj.hud && typeof gameObj.hud.sendMessageToServer === 'function') {
+        gameObj.hud.sendMessageToServer('input:jump', { active: isActive })
       }
     } catch (err) {
       console.error('Input system matching error:', err)
