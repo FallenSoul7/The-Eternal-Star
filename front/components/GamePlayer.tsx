@@ -116,23 +116,6 @@ export default function GamePlayer({ playerName, ...gameInfo }: GamePlayerProps)
     setIsSettingsOpen(false)
   }
 
-  const sendJumpSignal = (isActive: boolean) => {
-    if (!gameInstance) return
-    
-    try {
-      const gameObj = gameInstance as any
-      if (gameObj.player && gameObj.player.input) {
-        gameObj.player.input.jump = isActive
-      } else if (typeof gameObj.setJumpInput === 'function') {
-        gameObj.setJumpInput(isActive)
-      } else if (gameObj.hud && typeof gameObj.hud.sendMessageToServer === 'function') {
-        gameObj.hud.sendMessageToServer('input:jump', { active: isActive })
-      }
-    } catch (err) {
-      console.error('Input system matching error:', err)
-    }
-  }
-
   return (
     <div 
       className="fixed inset-0 bg-[#07070c] text-white overflow-hidden select-none"
@@ -231,21 +214,6 @@ export default function GamePlayer({ playerName, ...gameInfo }: GamePlayerProps)
             sendMessage={gameInstance.hud.sendMessageToServer}
             gameInstance={gameInstance}
           />
-          
-          <div className="absolute bottom-6 right-6 pointer-events-auto sm:hidden">
-            <button
-              onTouchStart={() => sendJumpSignal(true)}
-              onTouchEnd={() => sendJumpSignal(false)}
-              onTouchCancel={() => sendJumpSignal(false)}
-              onMouseDown={() => sendJumpSignal(true)}
-              onMouseUp={() => sendJumpSignal(false)}
-              onMouseLeave={() => sendJumpSignal(false)}
-              className="w-16 h-16 bg-white/10 hover:bg-white/20 active:bg-white/30 border border-white/20 rounded-full flex items-center justify-center font-black tracking-tighter text-sm uppercase select-none transition-transform active:scale-90"
-              style={{ touchAction: 'none' }}
-            >
-              Jump
-            </button>
-          </div>
         </div>
       )}
     </div>
