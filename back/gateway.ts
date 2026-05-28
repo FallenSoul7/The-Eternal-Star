@@ -1,40 +1,41 @@
 import http from 'http'
 import httpProxy from 'http-proxy'
 
-// 1. Create the proxy server with WebSocket support enabled
+// 1. Create the proxy server
 const proxy = httpProxy.createProxyServer({
   ws: true,
 })
 
-// 2. Map your game modes to their hidden internal ports
-const mapPorts = {
-  'football': 8001,
-  'car-parkour': 8002,
-  // You can easily add studio maps here in the future:
-  // 'custom-map-1': 8003
-}
-
-// 3. Create the single "Front Door" server on Port 8000
-const server = http.createServer()
-
-// 4. Listen for incoming WebSocket connections from your React frontend
-server.on('upgrade', (req, socket, head) => {
-  // Extract the map name from the connection URL (e.g., ws://localhost:8000/football)
-  const mapName = req.url ? req.url.split('/')[1] : ''
-  
-  const targetPort = mapPorts[mapName as keyof typeof mapPorts]
-
-  if (targetPort) {
-    console.log(`[Gateway] Routing player to ${mapName} on port ${targetPort}`)
-    // Silently forward the player to the correct backend map
-    proxy.ws(req, socket, head, { target: `ws://localhost:${targetPort}` })
-  } else {
-    console.log(`[Gateway] Map '${mapName}' not found. Dropping connection.`)
+// Prevent the whole gateway from crashing if a map server goes offline
+proxy.on('error', (err, req, socket) => {
+  console.error('[Gateway] Proxy routing error:', err.message)
+  if (socket && typeof socket.destroy === 'function') {
     socket.destroy()
   }
 })
 
-// 5. Open the front door
-server.listen(8000, () => {
-  console.log(' Gateway Server is running on Port 8000!')
+// 2. Create the single "Front Door" server
+const server = http.createServer()
+
+// 3. Listen for incoming connections and route them dynamically
+server.on('upgrade', (req, socket, head) => {
+  // We will expect URLs to look like: wss://your-url.com/football/8001
+  const parts = req.url ? req.url.split('/') : []
+  const mapName = parts[1] || 'unknown-map'
+  const targetPort = parts[2] // Dynamically grab the port from the URL!
+
+  if (targetPort) {
+    console.log(`[Gateway] Routing player to ${mapName} on port ${targetPort}`)
+    // Forward the player to whatever port the frontend asked for
+    proxy.ws(req, socket, head, { target: `ws://127.0.0.1:${targetPort}` })
+  } else {
+    console.log(`[Gateway] No port provided for '${mapName}'. Dropping connection.`)
+    socket.destroy()
+  }
+})
+
+// 4. Open the front door using Render's dynamic port (fixes the connection crash)
+const PORT = process.env.PORT || 8000
+server.listen(PORT, () => {
+  console.log(`🚀 Dynamic Gateway Server is running on Port ${PORT}!`)
 })
