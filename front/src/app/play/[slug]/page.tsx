@@ -3,23 +3,8 @@ import gameData from '../../../../public/gameData.json'
 import { Metadata } from 'next'
 // Go up 4 levels to reach front/components/
 import GameContent from '../../../../components/GameContent'
-
-// Perfect type definition mapping your exact JSON layout
-export interface GameInfo {
-  title: string
-  imageUrl: string
-  slug: string
-  websocketPort: number
-  metaDescription: string
-  markdown: string
-  images: {
-    url: string
-    width: number
-    height: number
-    alt: string
-    type: string
-  }[]
-}
+// IMPORT THE SHARED INTERFACE
+import { GameInfo } from '@/types' 
 
 export async function generateStaticParams() {
   const games = gameData as GameInfo[]
