@@ -22,7 +22,8 @@ export default function GameContent({ gameInfo }: { gameInfo: GameInfo }) {
         
         if (session?.user) {
           // Look up the unique username mapped in your custom profiles table
-          const { data: profile, error } = await supabase
+          // Note: Unused 'error' variable removed here to pass Vercel build!
+          const { data: profile } = await supabase
             .from('profiles')
             .select('username')
             .eq('username', session.user.email?.split('@')[0]) // Fallback check strategy
