@@ -2,10 +2,10 @@ import * as THREE from 'three'
 import { OrbitCameraFollowSystem } from './ecs/system/OrbitCameraFollowSystem'
 import { Entity } from '@shared/entity/Entity'
 import { InputMessage } from '@shared/network/client/inputMessage'
-import { PlayerComponent } from '@shared/component/PlayerComponent' // ✅ Added import
+import { PlayerComponent } from '@shared/component/PlayerComponent' 
 
 export class Camera extends THREE.PerspectiveCamera {
-  defaultOffset = new THREE.Vector3(0, 20, 40) // ✅ Moved default view up and back so you can see the map
+  defaultOffset = new THREE.Vector3(0, 20, 40) 
   controlSystem: OrbitCameraFollowSystem
 
   constructor(renderer: THREE.WebGLRenderer) {
@@ -15,16 +15,16 @@ export class Camera extends THREE.PerspectiveCamera {
   }
 
   update(dt: number, entities: Entity[], inputMessage: InputMessage) {
-    // ✅ Check if any player entity actually exists in the game right now
-    const hasPlayer = entities.some(entity => entity.components.has('PlayerComponent') || entity.getComponent?.(PlayerComponent))
+    // ✅ FIXED: Removed the string check. Now correctly passing the class constructor.
+    const hasPlayer = entities.some(entity => entity.getComponent(PlayerComponent))
 
     if (hasPlayer) {
       // If a player exists, let the camera follow them normally
       this.controlSystem.update(dt, entities, inputMessage)
     } else {
-      // ✅ FAILSAFE: If no player spawned, force camera to look at the center of your FlatMap!
-      this.position.set(0, 30, 50) // Sit high above the center
-      this.lookAt(new THREE.Vector3(0, 0, 0)) // Look directly down at the map center
+      // FAILSAFE: If no player spawned, force camera to look at the center of your FlatMap!
+      this.position.set(0, 30, 50) 
+      this.lookAt(new THREE.Vector3(0, 0, 0)) 
     }
   }
 }
