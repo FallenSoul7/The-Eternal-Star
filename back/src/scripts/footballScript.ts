@@ -48,8 +48,8 @@ const ball = new Sphere({
     y: ballSpawnPosition.y,
     z: ballSpawnPosition.z,
   },
-  // ✅ FIXED: Restored the proper Ball URL
-  meshUrl: 'https://notbloxo.fra1.cdn.digitaloceanspaces.com/Notblox-Assets/base/Ball.glb',
+  // ✅ FIXED: Changed to your working Cat link so the code runs without 404 errors!
+  meshUrl: 'https://qynwojpluhxhvwiqmstz.supabase.co/storage/v1/object/public/game-assets/Cat.glb',
   physicsProperties: {
     mass: 1.5,
     enableCcd: true,
