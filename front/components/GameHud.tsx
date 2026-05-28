@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable react/jsx-no-undef */
 import { useEffect, useRef, useState } from 'react'
 import { Joystick } from 'react-joystick-component'
