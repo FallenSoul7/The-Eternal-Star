@@ -8,6 +8,7 @@ import gameData from '../public/gameData.json'
 import { MiniGameCard } from './GameCard'
 import Navbar from './Navbar'
 import { supabase } from '../src/supabaseClient'
+import { Game } from '@/game/Game' // Imported to smash old server port cache instances
 
 export default function GameContent({ gameInfo }: { gameInfo: GameInfo }) {
   const [isPlaying, setIsPlaying] = useState(false)
@@ -43,7 +44,31 @@ export default function GameContent({ gameInfo }: { gameInfo: GameInfo }) {
     getProfileName()
   }, [])
 
+  // Explicit user click handler to clear singleton engine cache & securely bypass browser fullscreen blocks
   const handlePlayClick = () => {
+    // 1. Destroy old engine singletons so it shifts cleanly onto the new server websocketPort
+    try {
+      const globalGame = Game as any
+      if (globalGame.instance) {
+        if (typeof globalGame.instance.disconnect === 'function') {
+          globalGame.instance.disconnect()
+        }
+        globalGame.instance = null // Nukes old cached ports completely
+      }
+    } catch (e) {
+      console.warn('Game singleton instance cleanup skipped or not instantiated yet.', e)
+    }
+
+    // 2. Trigger browser fullscreen immediately on user tap event (Mobile URL bypass)
+    const element = document.documentElement as any
+    if (!document.fullscreenElement && !(document as any).webkitFullscreenElement) {
+      if (element.requestFullscreen) {
+        element.requestFullscreen().catch(() => {})
+      } else if (element.webkitRequestFullscreen) {
+        element.webkitRequestFullscreen().catch(() => {})
+      }
+    }
+
     setIsPlaying(true)
   }
 
