@@ -216,22 +216,22 @@ export class WebsocketSystem {
   }
 
   // TODO: Create EventOnPlayerConnect and EventOnPlayerDisconnect to respects ECS
-  // Might be useful to query the chat and send a message to all players when a player connects or disconnects
-  // Also could append scriptable events to be triggered on connect/disconnect depending on the game
   private async onConnect(ws: WebSocket<PlayerData>) {
     const ipBuffer = ws.getRemoteAddressAsText() as ArrayBuffer
     const ip = Buffer.from(ipBuffer).toString()
     if (await this.isRateLimited(ip)) {
-      // Respond to the client indicating that the connection is rate limited
       return ws.close()
     }
-    const player = new Player(ws, Math.random() * 5, 5, Math.random() * 5)
+    
+    // ✅ FIXED: Changed spawn to absolute center coordinates (X: 0, Y: 15, Z: 0)
+    // This stops your character from dropping into the void outside the map bounds
+    const player = new Player(ws, 0, 15, 0)
+    
     const connectionMessage: ConnectionMessage = {
       t: ServerMessageType.FIRST_CONNECTION,
       id: player.entity.id,
       tickRate: config.SERVER_TICKRATE,
     }
-    // player.entity.addComponent(new RandomizeComponent(player.entity.id))
     ws.getUserData().player = player
     ws.send(NetworkSystem.compress(connectionMessage), true)
 
@@ -340,23 +340,17 @@ export class WebsocketSystem {
       return
     }
 
-    // Check if player already has a custom name (not the default "Player" name)
     const playerComponent = player.entity.getComponent(PlayerComponent)
     if (playerComponent && !playerComponent.name.startsWith('Player')) {
       console.log(`Player ${playerComponent.name} attempted to change name again. Not allowed.`)
       return
     }
 
-    // Sanitize player name to prevent abuse
     let sanitizedName = name.trim().substring(0, 20)
-    // Remove any HTML tags or potentially harmful characters
     sanitizedName = sanitizedName.replace(/<[^>]*>|[<>]/g, '')
-    // Remove all spaces from the name
     sanitizedName = sanitizedName.replace(/\s+/g, '')
-    // Default to "Player" if name is empty after sanitization
     if (!sanitizedName) sanitizedName = `Player ${player.entity.id}`
 
-    // Check for duplicate names
     const isDuplicateName = this.players.some(
       (p) =>
         p.entity.id !== player.entity.id &&
@@ -367,24 +361,15 @@ export class WebsocketSystem {
       sanitizedName += `${player.entity.id}`
     }
 
-    // The player component holds the name, but the TextComponent could be altered by game scripts
-    // Like : [New Player] - iErcan (10)
-    // To not lose the name of the player, store it in the PlayerComponent
-    // TODO: Make it more abstract by using a NameComponent.
-    // Find the PlayerComponent on the player entity and update it
     if (playerComponent) {
       playerComponent.name = sanitizedName
     } else {
       console.error(`PlayerComponent not found for player ${player.entity.id}`)
     }
 
-    // Find the TextComponent on the player entity and update it
-    // Visual update of the name, could be changed in the future because games will alter this
-    // This resets the styling of the name
     const textComponent = player.entity.getComponent(TextComponent)
     if (textComponent) {
       textComponent.text = sanitizedName
-      // Updated it gets broadcasted + re-rendered
       textComponent.updated = true
       console.log(`Player ${player.entity.id} set name to: ${sanitizedName}`)
     } else {
