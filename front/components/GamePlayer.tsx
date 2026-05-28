@@ -58,18 +58,18 @@ export default function GamePlayer({ playerName, ...gameInfo }: GamePlayerProps)
       setConnectionError(null)
 
       try {
-        // --- DYNAMIC ID & SLUG GATEWAY ROUTING ---
-        // Grab the explicit unique id and the URL slug from our updated structures
+        // --- FIXED GATEWAY PATH ROUTING ---
+        // Grab your clean, required properties from the schema directly
         const gameId = gameInfo.id || 'game-football-001'
         const slug = gameInfo.slug || 'football'
         
-        // Combine everything into the path gateway string including the port
-        // Looks like: game-football-001/football/8003
+        // This packages up the ID, slug, and port safely into the URL path string
+        // Example output: "game-football-001/football/8003"
         const gatewayPath = `${gameId}/${slug}/${gameInfo.websocketPort}`
 
-        // Passing as `any` to bypass TypeScript strict engine checks if necessary
+        // Passing as `any` to bypass TypeScript strict engine types if required
         const game = Game.getInstance(gatewayPath as any, refContainer)
-        // -----------------------------------
+        // ----------------------------------
 
         game.hud.passChatState(setMessages)
         
@@ -111,7 +111,7 @@ export default function GamePlayer({ playerName, ...gameInfo }: GamePlayerProps)
       }
       purgeGameEngineUI()
     }
-    // Updated dependency arrays to precisely look for the new schema changes
+    // Listens cleanly for updates to your clean ID and Slug parameters
   }, [gameInfo.id, gameInfo.slug, gameInfo.websocketPort, playerName])
 
 
