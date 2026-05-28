@@ -27,6 +27,26 @@ export default function GamePlayer({ playerName, ...gameInfo }: GamePlayerProps)
   const refContainer = useRef<HTMLDivElement>(null)
   const retryCount = useRef(0)
 
+  // Forcefully sweeps away any raw HTML tags injected by the engine
+  const purgeGameEngineUI = () => {
+    const targets = ['Car', 'Enter', 'Interact', 'JUMP']
+    
+    document.querySelectorAll('button, div, span, p').forEach((el) => {
+      const text = el.textContent?.trim() || ''
+      if (targets.some(t => text.includes(t)) && !el.closest('#hud')) {
+        el.remove()
+      }
+    })
+
+    // Drop fullscreen mode when exiting to home screen
+    const doc = document as any
+    if (doc.exitFullscreen) {
+      doc.exitFullscreen().catch(() => {})
+    } else if (doc.webkitExitFullscreen) {
+      doc.webkitExitFullscreen().catch(() => {})
+    }
+  }
+
   useEffect(() => {
     let activeGame: Game | null = null
     let isMounted = true
@@ -77,6 +97,7 @@ export default function GamePlayer({ playerName, ...gameInfo }: GamePlayerProps)
           gameObj.disconnect()
         }
       }
+      purgeGameEngineUI()
     }
   }, [gameInfo.websocketPort, playerName])
 
@@ -92,6 +113,7 @@ export default function GamePlayer({ playerName, ...gameInfo }: GamePlayerProps)
         gameObj.disconnect()
       }
     }
+    purgeGameEngineUI()
     router.push('/')
   }
 
