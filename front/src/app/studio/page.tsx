@@ -71,9 +71,10 @@ export default function Studio() {
       setThumbnailFile(null)
       setModelFile(null)
       
-    } catch (error: any) {
+        } catch (error: unknown) {
       console.error('Upload failed:', error)
-      setStatusMessage(`❌ Error: ${error.message}`)
+      const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred'
+      setStatusMessage(`❌ Error: ${errorMessage}`)
     } finally {
       setUploading(false)
     }
