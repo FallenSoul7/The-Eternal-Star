@@ -6,7 +6,8 @@ import GameCard from '../../components/GameCard'
 import Navbar from '../../components/Navbar'
 import type { Session } from '@supabase/supabase-js'
 import gameData from '../../public/gameData.json'
-import { Home, User, Settings as SettingsIcon, Sun, MonitorPlay, Cog } from 'lucide-react'
+import { Home as HomeIcon, User, Settings as SettingsIcon, Sun, MonitorPlay, Cog } from 'lucide-react'
+
 import Link from 'next/link'
 
 export default function Home() {
@@ -78,7 +79,7 @@ export default function Home() {
       <nav className="fixed bottom-0 w-full bg-slate-950 border-t border-slate-800 p-2 z-50">
         <div className="flex justify-around">
           <button onClick={() => setActiveTab('home')} className={`flex flex-col items-center p-2 ${activeTab === 'home' ? 'text-amber-400' : 'text-slate-500'}`}>
-            <Home size={24} /> <span className="text-[10px]">Home</span>
+            <HomeIcon size={24} /> <span className="text-[10px]">Home</span>
           </button>
           <button onClick={() => setActiveTab('avatar')} className={`flex flex-col items-center p-2 ${activeTab === 'avatar' ? 'text-amber-400' : 'text-slate-500'}`}>
             <User size={24} /> <span className="text-[10px]">Avatar</span>
