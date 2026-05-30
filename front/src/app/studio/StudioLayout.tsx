@@ -3,13 +3,11 @@
 import React, { useState, useEffect } from 'react'
 import Toolbar from './navigation/Toolbar'
 import Sidebar from './navigation/Sidebar'
-// We will build these imported files in the next batches!
 import CanvasContainer from './viewport/CanvasContainer'
 import ExplorerPanel from './panels/ExplorerPanel'
 import PropertiesPanel from './panels/PropertiesPanel'
 import ScriptEditor from './scripting/ScriptEditor'
 
-// Exporting interfaces so your other files can import and use them
 export interface ExplorerNode {
   id: string
   name: string
@@ -31,7 +29,7 @@ export interface PanelsVisibility {
 }
 
 export default function StudioLayout() {
-  // --- Workspace Hierarchy State (From Second AI) ---
+  // --- Workspace Hierarchy State (The Engine Data) ---
   const [nodes, setNodes] = useState<ExplorerNode[]>([
     { id: '1', name: 'Workspace', type: 'Folder', parentId: null, position: '0, 0, 0', size: '0, 0, 0', anchored: true, color: '', material: 'Plastic' },
     { id: '2', name: 'Baseplate', type: 'Part', parentId: '1', position: '0, -1, 0', size: '100, 2, 100', anchored: true, color: '#334155', material: 'Plastic' },
@@ -45,12 +43,12 @@ export default function StudioLayout() {
   const [activeLeftTab, setActiveLeftTab] = useState<'toolbox' | 'assets' | 'settings' | 'none'>('toolbox')
   const [activeTool, setActiveTool] = useState<'select' | 'move' | 'scale' | 'rotate'>('select')
   const [simulationState, setSimulationState] = useState<'stop' | 'play' | 'run'>('stop')
-  const [selectedNodeId, setSelectedNodeId] = useState<string | null>('2')
+  const [selectedNodeId, setSelectedNodeId] = useState<string | null>('3')
   
   const [gridSnapping, setGridSnapping] = useState(true)
   const [snapSize, setSnapSize] = useState(1)
 
-  // --- Physics Simulation Loop (From Second AI) ---
+  // --- Physics Simulation Loop ---
   useEffect(() => {
     if (simulationState === 'stop') return
     const interval = setInterval(() => {
@@ -94,7 +92,7 @@ export default function StudioLayout() {
   }
 
   return (
-    <div className="flex flex-col h-screen overflow-hidden bg-slate-950 font-sans text-slate-200">
+    <div className="flex flex-col h-screen h-[100dvh] overflow-hidden bg-slate-950 font-sans text-slate-200 w-full fixed inset-0">
       {/* Top Ribbon */}
       <Toolbar 
         activeTool={activeTool} 
@@ -110,17 +108,21 @@ export default function StudioLayout() {
         setSnapSize={setSnapSize}
       />
 
-      <div className="flex-1 flex overflow-hidden w-full relative">
-        {/* Left Nav */}
-        <Sidebar 
-          panelsVisibility={panelsVisibility} 
-          togglePanel={togglePanel}
-          activeSubPanel={activeLeftTab} 
-          setActiveSubPanel={setActiveLeftTab}
-        />
+      {/* Main Workspace Area - Added md:flex-row to fix mobile wrapping */}
+      <div className="flex-1 flex flex-col md:flex-row overflow-hidden w-full relative">
+        
+        {/* Left Nav - Hidden on mobile to save space, visible on md+ screens */}
+        <div className="hidden md:flex h-full">
+          <Sidebar 
+            panelsVisibility={panelsVisibility} 
+            togglePanel={togglePanel}
+            activeSubPanel={activeLeftTab} 
+            setActiveSubPanel={setActiveLeftTab}
+          />
+        </div>
 
-        {/* Center Workspace */}
-        <div className="flex-1 flex flex-col h-full overflow-hidden">
+        {/* Center Workspace (Canvas + Code Editor) */}
+        <div className="flex-1 flex flex-col h-full overflow-hidden min-w-0">
           <CanvasContainer 
             nodes={nodes} 
             selectedNodeId={selectedNodeId} 
@@ -131,12 +133,14 @@ export default function StudioLayout() {
             snapSize={snapSize}
           />
           {panelsVisibility.codeEditor && (
-            <ScriptEditor />
+            <div className="h-1/3 md:h-48 shrink-0 border-t border-slate-800">
+              <ScriptEditor />
+            </div>
           )}
         </div>
 
-        {/* Right Dock */}
-        <div className="w-80 bg-slate-900 border-l border-slate-800 flex flex-col shrink-0 z-20">
+        {/* Right Dock (Explorer + Properties) - Converts to a bottom drawer or stacks cleanly on mobile */}
+        <div className="w-full md:w-80 h-1/2 md:h-full bg-slate-900 md:border-l border-t md:border-t-0 border-slate-800 flex flex-col shrink-0 z-20 overflow-y-auto">
           {panelsVisibility.explorer && (
             <ExplorerPanel 
               nodes={nodes} 
