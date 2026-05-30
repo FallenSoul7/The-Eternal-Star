@@ -13,7 +13,6 @@
         "type": "image/webp"
       }
     ],
-    "websocketPort": 8003,
     "metaDescription": "Multiplayer football game in your browser with your friends.",
     "markdown": "..."
   },
@@ -31,7 +30,6 @@
         "type": "image/webp"
       }
     ],
-    "websocketPort": 8002,
     "metaDescription": "Play Obby NotBlox Parkour, a fun and challenging multiplayer parkour game.",
     "markdown": "..."
   },
@@ -49,7 +47,6 @@
         "type": "image/webp"
       }
     ],
-    "websocketPort": 8004,
     "metaDescription": "Play Pet Simulator Online For Free!",
     "markdown": "..."
   },
@@ -57,6 +54,7 @@
     "id": "game-test-004",
     "title": "Test Server",
     "imageUrl": "/PreviewTestGame.webp",
+    "slug": "test",
     "images": [
       {
         "url": "/PreviewTestGame.webp",
@@ -66,8 +64,6 @@
         "type": "image/webp"
       }
     ],
-    "websocketPort": 8001,
-    "slug": "test",
     "metaDescription": "This is a test server for development purposes.",
     "markdown": "..."
   }
