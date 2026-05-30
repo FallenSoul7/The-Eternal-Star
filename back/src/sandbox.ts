@@ -106,7 +106,7 @@ async function startServer() {
 
         // activate() points singletons at this room then add player
         room.activate()
-        const player = room.addPlayer(ws, 0, 200, 0)
+        const player = room.addPlayer(ws, 0, 450, 0)
         ws.getUserData().player = player
 
         // Send FIRST_CONNECTION
