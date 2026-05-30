@@ -224,7 +224,7 @@ export class Room {
     this.es.afterUpdate(entities)
   }
 
-  addPlayer(ws: WebSocket, x = 0, y = 200, z = 0): Player {
+  addPlayer(ws: WebSocket, x = 0, y = 450, z = 0): Player {
     this.activate()
     const player = new Player(ws, x, y, z)
     this.players.push(player)
