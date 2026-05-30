@@ -263,7 +263,7 @@ export class Room {
     this.eventSystem.afterUpdate(entities)
   }
 
-  addPlayer(ws: WebSocket, x = 0, y = 50, z = 0): Player {
+  addPlayer(ws: WebSocket, x = 0, y = 100, z = 0): Player {
     return this.withContext(() => {
       const player = new Player(ws, x, y, z)
       this.players.push(player)
