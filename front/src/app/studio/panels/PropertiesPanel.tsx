@@ -14,7 +14,8 @@ interface PropertiesPanelProps {
 export default function PropertiesPanel({ nodes, setNodes, selectedNodeId, togglePanel }: PropertiesPanelProps) {
   const selectedNode = nodes.find((n) => n.id === selectedNodeId)
 
-  const handlePropertyChange = (property: keyof ExplorerNode, value: any) => {
+  const handlePropertyChange = (property: keyof ExplorerNode, value: string | boolean) => {
+
     if (!selectedNodeId) return
     setNodes((prev) =>
       prev.map((node) => (node.id === selectedNodeId ? { ...node, [property]: value } : node))
