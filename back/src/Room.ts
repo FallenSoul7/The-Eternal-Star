@@ -44,6 +44,7 @@ const SLUG_TO_SCRIPT: Record<string, string> = {
   obby: 'parkourScript.ts',
   'pet-simulator': 'petSimulatorScript.ts',
   test: 'defaultScript.ts',
+  'village-obby': 'villageObbyScript.ts',
 }
 
 // Global async lock — only one room's tick runs at a time
