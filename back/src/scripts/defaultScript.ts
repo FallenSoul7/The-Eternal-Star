@@ -24,7 +24,8 @@ function randomHexColor() {
 }
 
 // ✅ FIXED: Loaded your working FlatMap so the default world has a floor
-new MapWorld('https://qynwojpluhxhvwiqmstz.supabase.co/storage/v1/object/public/game-assets/FlatMap.glb')
+new MapWorld('https://qynwojpluhxhvwiqmstz.supabase.co/storage/v1/object/public/game-assets/Untitled%20folder/Village%20obbesy.glb')
+
 
 // === Basic Entity Creation Examples ===
 
