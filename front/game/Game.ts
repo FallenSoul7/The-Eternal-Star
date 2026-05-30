@@ -53,7 +53,7 @@ export class Game {
   private identifyFollowedMeshSystem: IdentifyFollowedMeshSystem
   
   // ALLOW STRING OR NUMBER FOR GATEWAY ROUTING
-  private constructor(gameContainerRef: MutableRefObject<any>, port?: number | string) {
+  private constructor(gameContainerRef: MutableRefObject<any>, slug: string) {
     this.syncComponentSystem = new SyncComponentsSystem(this)
     this.syncPositionSystem = new SyncPositionSystem()
     this.syncRotationSystem = new SyncRotationSystem()
@@ -62,7 +62,7 @@ export class Game {
     
     // Passing as 'any' here temporarily to bypass TypeScript errors 
     // until we update WebsocketManager.ts in the next step
-    this.websocketManager = new WebSocketManager(this, port as any)
+    this.websocketManager = new WebSocketManager(this, slug)
     
     this.animationSystem = new AnimationSystem()
     this.sleepCheckSystem = new SleepCheckSystem()
@@ -82,12 +82,13 @@ export class Game {
   }
 
   // ALLOW STRING OR NUMBER FOR GATEWAY ROUTING
-  static getInstance(port?: number | string, gameContainerRef?: MutableRefObject<any>): Game {
+  static getInstance(slug: string, gameContainerRef?: MutableRefObject<any>): Game {
+
     if (!Game.instance) {
       if (!gameContainerRef) {
         throw new Error('Game instance not initialized with gameContainerRef')
       }
-      Game.instance = new Game(gameContainerRef, port)
+      Game.instance = new Game(gameContainerRef, slug)
     }
     return Game.instance
   }
