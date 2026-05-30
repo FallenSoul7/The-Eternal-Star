@@ -92,7 +92,7 @@ export default function StudioLayout() {
   }
 
   return (
-    <div className="flex flex-col h-screen h-[100dvh] overflow-hidden bg-slate-950 font-sans text-slate-200 w-full fixed inset-0">
+    <div className="flex flex-col h-screen overflow-hidden bg-slate-950 font-sans text-slate-200">
       {/* Top Ribbon */}
       <Toolbar 
         activeTool={activeTool} 
@@ -108,21 +108,17 @@ export default function StudioLayout() {
         setSnapSize={setSnapSize}
       />
 
-      {/* Main Workspace Area - Added md:flex-row to fix mobile wrapping */}
-      <div className="flex-1 flex flex-col md:flex-row overflow-hidden w-full relative">
-        
-        {/* Left Nav - Hidden on mobile to save space, visible on md+ screens */}
-        <div className="hidden md:flex h-full">
-          <Sidebar 
-            panelsVisibility={panelsVisibility} 
-            togglePanel={togglePanel}
-            activeSubPanel={activeLeftTab} 
-            setActiveSubPanel={setActiveLeftTab}
-          />
-        </div>
+      <div className="flex-1 flex overflow-hidden w-full relative">
+        {/* Left Nav */}
+        <Sidebar 
+          panelsVisibility={panelsVisibility} 
+          togglePanel={togglePanel}
+          activeSubPanel={activeLeftTab} 
+          setActiveSubPanel={setActiveLeftTab}
+        />
 
-        {/* Center Workspace (Canvas + Code Editor) */}
-        <div className="flex-1 flex flex-col h-full overflow-hidden min-w-0">
+        {/* Center Workspace */}
+        <div className="flex-1 flex flex-col h-full overflow-hidden">
           <CanvasContainer 
             nodes={nodes} 
             selectedNodeId={selectedNodeId} 
@@ -133,14 +129,12 @@ export default function StudioLayout() {
             snapSize={snapSize}
           />
           {panelsVisibility.codeEditor && (
-            <div className="h-1/3 md:h-48 shrink-0 border-t border-slate-800">
-              <ScriptEditor />
-            </div>
+            <ScriptEditor />
           )}
         </div>
 
-        {/* Right Dock (Explorer + Properties) - Converts to a bottom drawer or stacks cleanly on mobile */}
-        <div className="w-full md:w-80 h-1/2 md:h-full bg-slate-900 md:border-l border-t md:border-t-0 border-slate-800 flex flex-col shrink-0 z-20 overflow-y-auto">
+        {/* Right Dock */}
+        <div className="w-80 bg-slate-900 border-l border-slate-800 flex flex-col shrink-0 z-20">
           {panelsVisibility.explorer && (
             <ExplorerPanel 
               nodes={nodes} 
