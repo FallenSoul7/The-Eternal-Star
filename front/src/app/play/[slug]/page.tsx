@@ -1,8 +1,8 @@
-import gameData from '../../../public/gameData.json'
+import gameData from '../../../../public/gameData.json' // Corrected to 4 steps
 import { Metadata } from 'next'
-import GameContent from '../../../../components/GameContent'
+import GameContent from '../../../../components/GameContent' // 4 steps
 import { GameInfo } from '@/types'
-import { supabase } from '../../../../supabaseClient' // Imported your Supabase client
+import { supabase } from '../../../supabaseClient' // Corrected to 3 steps
 
 // This tells Next.js to dynamically serve new pages when users upload maps
 export const dynamicParams = true 
