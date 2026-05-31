@@ -9,7 +9,7 @@ import {
   Home as HomeIcon, User, Settings as SettingsIcon,
   Sun, MonitorPlay, Cog, Plus, Search, X, Check,
   UserMinus, ArrowLeft, Upload, Code2, ChevronLeft,
-  ChevronRight
+  ChevronRight, Loader2
 } from 'lucide-react'
 import Link from 'next/link'
 import * as THREE from 'three'
@@ -38,13 +38,18 @@ const AVATARS = [
 // ── 3D Avatar Viewer ──────────────────────────────────────────────────────────
 function AvatarViewer({ index, size = 'large' }: { index: number; size?: 'large' | 'small' }) {
   const mountRef = useRef<HTMLDivElement>(null)
+  const [isLoading, setIsLoading] = useState(true)
+  const [loadError, setLoadError] = useState(false)
 
   useEffect(() => {
     const el = mountRef.current
     if (!el) return
 
-    const W = el.clientWidth || 200
-    const H = el.clientHeight || 200
+    setIsLoading(true)
+    setLoadError(false)
+
+    const W = el.clientWidth || (size === 'small' ? 64 : 300)
+    const H = el.clientHeight || (size === 'small' ? 64 : 300)
 
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true })
     renderer.setSize(W, H)
@@ -54,25 +59,30 @@ function AvatarViewer({ index, size = 'large' }: { index: number; size?: 'large'
 
     const scene = new THREE.Scene()
 
-    const camera = new THREE.PerspectiveCamera(40, W / H, 0.1, 100)
+    const camera = new THREE.PerspectiveCamera(45, W / H, 0.1, 100)
+    
+    // Position camera based on normalized asset size (height normalized to 2 units)
     if (size === 'small') {
-      camera.position.set(0, 3.2, 2.5)
-      camera.lookAt(0, 3.0, 0)
+      // Focused headshot close-up view
+      camera.position.set(0, 1.45, 1.1)
+      camera.lookAt(0, 1.45, 0)
     } else {
-      camera.position.set(0, 2.2, 5.0)
-      camera.lookAt(0, 1.8, 0)
+      // Full body framing
+      camera.position.set(0, 1.1, 3.2)
+      camera.lookAt(0, 1.0, 0)
     }
 
-    scene.add(new THREE.AmbientLight(0xffffff, 0.8))
-    const dir = new THREE.DirectionalLight(0xffffff, 1.5)
+    // Lighting config
+    scene.add(new THREE.AmbientLight(0xffffff, 0.9))
+    const dir = new THREE.DirectionalLight(0xffffff, 1.6)
     dir.position.set(3, 8, 5)
     dir.castShadow = true
     scene.add(dir)
 
     if (size === 'large') {
       const platform = new THREE.Mesh(
-        new THREE.CylinderGeometry(1.5, 1.5, 0.07, 48),
-        new THREE.MeshStandardMaterial({ color: 0x1a1a2e, roughness: 0.6 })
+        new THREE.CylinderGeometry(1.2, 1.2, 0.05, 48),
+        new THREE.MeshStandardMaterial({ color: 0x1e1e38, roughness: 0.5 })
       )
       platform.position.y = -0.01
       platform.receiveShadow = true
@@ -88,25 +98,40 @@ function AvatarViewer({ index, size = 'large' }: { index: number; size?: 'large'
       (gltf) => {
         loadedModel = gltf.scene
 
+        // Calculate exact boundaries to auto-scale assets perfectly
         const box = new THREE.Box3().setFromObject(loadedModel)
         const center = box.getCenter(new THREE.Vector3())
-        
-        loadedModel.position.x += (loadedModel.position.x - center.x)
-        loadedModel.position.z += (loadedModel.position.z - center.z)
-        loadedModel.position.y = 0
+        const sizeBox = box.getSize(new THREE.Vector3())
+
+        // Re-center model pivot points cleanly
+        loadedModel.position.x -= center.x
+        loadedModel.position.z -= center.z
+        loadedModel.position.y -= box.min.y // Force feet to stick directly on Y = 0 ground level
+
+        // Normalize scaling to a fixed height of 2 units tall
+        const maxDim = Math.max(sizeBox.x, sizeBox.y, sizeBox.z)
+        if (maxDim > 0) {
+          const normScale = 2.0 / maxDim
+          loadedModel.scale.set(normScale, normScale, normScale)
+        }
 
         loadedModel.traverse((child: any) => {
           if (child.isMesh) {
             child.castShadow = true
             child.receiveShadow = true
+            // Prevent transparent asset parts from discarding depths
+            if (child.material) child.material.depthWrite = true
           }
         })
 
         scene.add(loadedModel)
+        setIsLoading(false)
       },
       undefined,
       (error) => {
         console.error('Failed to load character file asset from network layer:', error)
+        setIsLoading(false)
+        setLoadError(true)
       }
     )
 
@@ -122,6 +147,7 @@ function AvatarViewer({ index, size = 'large' }: { index: number; size?: 'large'
     }
     animate()
 
+    // Clean up context loops
     return () => {
       cancelAnimationFrame(animId)
       renderer.dispose()
@@ -129,7 +155,21 @@ function AvatarViewer({ index, size = 'large' }: { index: number; size?: 'large'
     }
   }, [index, size])
 
-  return <div ref={mountRef} className="w-full h-full" />
+  return (
+    <div className="w-full h-full relative flex items-center justify-center">
+      {isLoading && (
+        <div className="absolute inset-0 flex items-center justify-center bg-[#0d0d1f]/60 z-10">
+          <Loader2 className="animate-spin text-amber-400 w-5 h-5" />
+        </div>
+      )}
+      {loadError && (
+        <div className="absolute inset-0 flex items-center justify-center bg-red-950/20 z-10">
+          <span className="text-[10px] text-red-400 font-bold">Error</span>
+        </div>
+      )}
+      <div ref={mountRef} className="w-full h-full" />
+    </div>
+  )
 }
 
 // ── Friend circle ─────────────────────────────────────────────────────────────
