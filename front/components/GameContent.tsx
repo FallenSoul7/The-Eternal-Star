@@ -14,9 +14,8 @@ import { Game } from '@/game/Game'
 export default function GameContent({ gameInfo }: { gameInfo: GameInfo }) {
   const [isPlaying, setIsPlaying] = useState(false)
   const [playerName, setPlayerName] = useState<string>('Guest')
-  const [loadingProfile, setLoadingProfile] = useState(true)
 
-  // Fetch the logged-in user's true username from the database
+  // Fetch the logged-in user's true username silently for the game engine
   useEffect(() => {
     async function getProfileName() {
       try {
@@ -37,8 +36,6 @@ export default function GameContent({ gameInfo }: { gameInfo: GameInfo }) {
         }
       } catch (err) {
         console.error('Error loading account profile name:', err)
-      } finally {
-        setLoadingProfile(false)
       }
     }
 
@@ -123,19 +120,13 @@ export default function GameContent({ gameInfo }: { gameInfo: GameInfo }) {
               <p className="text-gray-600 text-lg leading-relaxed">{gameInfo.metaDescription}</p>
               
               <div className="flex flex-col space-y-4">
-                <div className="bg-gray-100 p-4 rounded-xl border border-gray-200">
-                  <p className="text-xs font-bold text-gray-500 uppercase tracking-wide">Playing As Account</p>
-                  <p className="text-xl font-black text-blue-600 mt-1 animate-pulse">
-                    {loadingProfile ? 'Loading character...' : playerName}
-                  </p>
-                </div>
+                {/* The "Playing As Account" card block has been removed from here */}
 
                 <button
                   onClick={handlePlayClick}
-                  disabled={loadingProfile}
-                  className="bg-blue-600 hover:bg-blue-500 text-white px-8 py-3 rounded-xl font-bold text-lg transition-all duration-300 transform hover:scale-105 inline-block text-center shadow-lg hover:shadow-xl disabled:bg-gray-400 disabled:scale-100"
+                  className="bg-blue-600 hover:bg-blue-500 text-white px-8 py-4 rounded-xl font-bold text-lg transition-all duration-300 transform hover:scale-105 inline-block text-center shadow-lg hover:shadow-xl"
                 >
-                  {loadingProfile ? 'Syncing Profile...' : 'Play Now →'}
+                  Play Now →
                 </button>
               </div>
             </div>
