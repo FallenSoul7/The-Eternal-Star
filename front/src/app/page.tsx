@@ -485,6 +485,9 @@ export default function Home() {
   const [activeTab, setActiveTab] = useState('home')
   const [avatarIndex, setAvatarIndex] = useState(0)
   const [friends, setFriends] = useState<any[]>([])
+  
+  // 1. Add state to hold maps pulled from the database
+  const [uploadedMaps, setUploadedMaps] = useState<GameInfo[]>([])
 
   // Sub-pages
   const [page, setPage] = useState<'main' | 'friends' | 'upload' | 'devtools'>('main')
@@ -497,6 +500,30 @@ export default function Home() {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_e, s) => setSession(s))
     return () => subscription.unsubscribe()
   }, [])
+
+  // 2. Fetch published maps from Supabase and format them for GameCard
+  useEffect(() => {
+    supabase
+      .from('maps')
+      .select('*')
+      .eq('is_published', true)
+      .order('created_at', { ascending: false })
+      .then(({ data }) => {
+        if (data) {
+          // Map database fields (like icon_url) to match what GameCard expects (imageUrl)
+          const formatted: GameInfo[] = data.map(map => ({
+            id: map.id,
+            title: map.title,
+            slug: map.slug,
+            imageUrl: map.icon_url || '', 
+            websocketPort: 8080, // Default fallback port
+            metaDescription: `Created by user`,
+            markdown: ''
+          }))
+          setUploadedMaps(formatted)
+        }
+      })
+  }, [page]) // Refetches when returning from the upload page
 
   useEffect(() => {
     if (!session) return
@@ -518,7 +545,11 @@ export default function Home() {
 
   if (!session) return <AuthGateway onAuthSuccess={() => {}} />
 
-  const games = gameData as GameInfo[]
+  const staticGames = gameData as GameInfo[]
+  
+  // 3. Combine both lists: Dynamic database maps show first, followed by static JSON games
+  const allGames = [...uploadedMaps, ...staticGames]
+  
   const email = session.user.email ?? ''
   const username = email.split('@')[0]
   const uid = session.user.id
@@ -531,7 +562,7 @@ export default function Home() {
   // ── HOME tab ──────────────────────────────────────────────────────────────
   const renderHome = () => (
     <div className="pb-24">
-      {/* Header — no icon, just title + social */}
+      {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-slate-800">
         <span className="text-white font-black text-lg tracking-tight">The Eternal Star</span>
         <div className="flex items-center gap-3">
@@ -542,7 +573,6 @@ export default function Home() {
 
       {/* Friend circles row */}
       <div className="px-4 mt-4 flex items-center gap-3 overflow-x-auto no-scrollbar pb-2">
-        {/* My circle */}
         <div className="flex flex-col items-center gap-1 shrink-0">
           <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-amber-400 bg-[#12122a]">
             <AvatarViewer index={avatarIndex} size="small" />
@@ -550,12 +580,10 @@ export default function Home() {
           <span className="text-white text-xs font-semibold max-w-[64px] truncate">{username}</span>
         </div>
 
-        {/* Friend circles */}
         {friends.map(f => (
           <FriendCircle key={f.id} username={f.username} avatarId={f.avatar_id ?? 'default'} />
         ))}
 
-        {/* Add friend button */}
         <button onClick={() => setPage('friends')} className="flex flex-col items-center gap-1 shrink-0 active:scale-95">
           <div className="w-16 h-16 rounded-full border-2 border-dashed border-slate-600 flex items-center justify-center bg-white/5">
             <Plus className="w-6 h-6 text-slate-400" />
@@ -564,22 +592,22 @@ export default function Home() {
         </button>
       </div>
 
-      {/* Last Played */}
+      {/* Last Played — Uses allGames now */}
       <section className="px-4 mt-6">
         <h2 className="text-lg font-bold text-slate-300 mb-3">Last Played</h2>
         <div className="flex overflow-x-auto space-x-4 pb-4 no-scrollbar">
-          {games.slice(0, 5).map((game, i) => (
+          {allGames.slice(0, 5).map((game, i) => (
             <div key={i} className="shrink-0 w-40"><GameCard {...game} /></div>
           ))}
         </div>
       </section>
 
-      {/* Discover */}
+      {/* Discover — Uses allGames now */}
       <div className="px-4 mt-6">
         <h2 className="text-lg font-bold text-slate-300 mb-3">Discover</h2>
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-          {games.map((game, i) => (
-            <div key={i} className={i === games.length - 1 && games.length % 2 !== 0 ? 'md:col-span-2' : ''}>
+          {allGames.map((game, i) => (
+            <div key={i} className={i === allGames.length - 1 && allGames.length % 2 !== 0 ? 'md:col-span-2' : ''}>
               <GameCard {...game} />
             </div>
           ))}
