@@ -1,4 +1,4 @@
-import gameData from '../../../../public/gameData.json'
+import gameData from '../../../public/gameData.json'
 import { Metadata } from 'next'
 import GameContent from '../../../../components/GameContent'
 import { GameInfo } from '@/types'
