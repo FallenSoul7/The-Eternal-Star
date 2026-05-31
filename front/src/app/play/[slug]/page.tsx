@@ -2,8 +2,6 @@ import gameData from '../../../../public/gameData.json'
 import { Metadata } from 'next'
 import GameContent from '../../../../components/GameContent'
 import { GameInfo } from '@/types'
-import { createServerClient } from '@supabase/ssr'
-import { cookies } from 'next/headers'
 
 export async function generateStaticParams() {
   const games = gameData as GameInfo[]
@@ -28,23 +26,15 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
       title: `Play ${gameInfo.title} - The Eternal Star`,
       description: gameInfo.metaDescription,
       images: gameInfo.images ?? [],
+      siteName: 'The Eternal Star',
     },
+    twitter: { card: 'summary_large_image' },
+    alternates: { canonical: `https://the-eternal-star.vercel.app/play/${gameInfo.slug}` },
   }
 }
 
 export default async function GamePage({ params }: { params: Params }) {
   const { slug } = await params
   const gameInfo = getGamesBySlug(slug)
-
-  // Get username from Supabase session server-side
-  const cookieStore = await cookies()
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    { cookies: { getAll: () => cookieStore.getAll() } }
-  )
-  const { data: { session } } = await supabase.auth.getSession()
-  const playerName = session?.user?.email?.split('@')[0] ?? 'Player'
-
-  return <GameContent gameInfo={gameInfo} playerName={playerName} />
+  return <GameContent gameInfo={gameInfo} />
 }
