@@ -411,6 +411,8 @@ function FriendsPanel({ session, onBack }: { session: Session; onBack: () => voi
       .select('*, from:from_id(id,username,avatar_id), to:to_id(id,username,avatar_id)')
       .or(`from_id.eq.${uid},to_id.eq.${uid}`)
     if (!data) return
+    
+    // Filter and map out accepted friends vs pending requests
     setFriends(data.filter(r => r.status === 'accepted').map(r => r.from_id === uid ? r.to : r.from))
     setPendingIn(data.filter(r => r.status === 'pending' && r.to_id === uid).map(r => ({ ...r.from, requestId: r.id })))
   }, [uid])
@@ -450,28 +452,36 @@ function FriendsPanel({ session, onBack }: { session: Session; onBack: () => voi
 
   return (
     <div className="min-h-screen bg-black text-white pb-10">
+      {/* HEADER NAVBAR */}
       <div className="flex items-center gap-3 p-4 border-b border-white/10">
-        <button onClick={onBack} className="p-2 rounded-full bg-white/10"><ArrowLeft className="w-5 h-5" /></button>
+        <button onClick={onBack} className="p-2 rounded-full bg-white/10 active:scale-95 transition-transform">
+          <ArrowLeft className="w-5 h-5" />
+        </button>
         <h2 className="font-bold text-lg flex-1">Friends</h2>
-        <button onClick={() => setShowSearch(s => !s)} className="p-2 rounded-full bg-amber-400 text-black">
+        <button onClick={() => setShowSearch(s => !s)} className="p-2 rounded-full bg-amber-400 text-black active:scale-95 transition-transform">
           <Search className="w-5 h-5" />
         </button>
       </div>
 
+      {/* SEARCH AREA */}
       {showSearch && (
         <div className="p-4 border-b border-white/10">
-          <input className="w-full bg-white/10 rounded-xl px-4 py-2 text-white outline-none"
-            placeholder="Search username..." value={searchQuery}
-            onChange={e => { setSearchQuery(e.target.value); searchUsers(e.target.value) }} />
+          <input 
+            className="w-full bg-white/10 rounded-xl px-4 py-2 text-white outline-none border border-transparent focus:border-amber-400/50 transition-colors"
+            placeholder="Search username..." 
+            value={searchQuery}
+            onChange={e => { setSearchQuery(e.target.value); searchUsers(e.target.value) }} 
+          />
           {searching && <p className="text-slate-400 text-sm mt-2">Searching...</p>}
           <div className="flex flex-col gap-2 mt-3">
             {searchResults.map(u => (
               <div key={u.id} className="flex items-center gap-3 bg-white/5 rounded-xl p-3">
-                <div className="w-10 h-10 rounded-full overflow-hidden bg-[#12122a] border border-amber-400">
-                  <AvatarViewer index={0} size="small" />
+                <div className="w-10 h-10 rounded-full overflow-hidden bg-[#12122a] border border-amber-400 shrink-0">
+                  {/* Dynamic Avatar Index Fix */}
+                  <AvatarViewer index={parseInt(u.avatar_id) || 0} size="small" />
                 </div>
-                <span className="flex-1 font-semibold">{u.username}</span>
-                <button onClick={() => sendRequest(u.id)} className="p-2 bg-amber-400 rounded-full text-black">
+                <span className="flex-1 font-semibold truncate">{u.username}</span>
+                <button onClick={() => sendRequest(u.id)} className="p-2 bg-amber-400 rounded-full text-black active:scale-95 transition-transform">
                   <Plus className="w-4 h-4" />
                 </button>
               </div>
@@ -480,32 +490,40 @@ function FriendsPanel({ session, onBack }: { session: Session; onBack: () => voi
         </div>
       )}
 
+      {/* INCOMING FRIEND REQUESTS */}
       {pendingIn.length > 0 && (
         <div className="p-4 border-b border-white/10">
-          <p className="text-slate-400 text-xs uppercase tracking-widest mb-3">Requests ({pendingIn.length})</p>
+          <p className="text-slate-400 text-xs uppercase tracking-widest mb-3 font-bold">Requests ({pendingIn.length})</p>
           {pendingIn.map(u => (
             <div key={u.id} className="flex items-center gap-3 bg-white/5 rounded-xl p-3 mb-2">
-              <div className="w-10 h-10 rounded-full overflow-hidden bg-[#12122a] border border-amber-400">
-                <AvatarViewer index={0} size="small" />
+              <div className="w-10 h-10 rounded-full overflow-hidden bg-[#12122a] border border-amber-400 shrink-0">
+                {/* Dynamic Avatar Index Fix */}
+                <AvatarViewer index={parseInt(u.avatar_id) || 0} size="small" />
               </div>
-              <span className="flex-1 font-semibold">{u.username}</span>
-              <button onClick={() => acceptRequest(u.requestId)} className="p-2 bg-green-500 rounded-full text-white mr-1"><Check className="w-4 h-4" /></button>
-              <button onClick={() => rejectRequest(u.requestId)} className="p-2 bg-red-500 rounded-full text-white"><X className="w-4 h-4" /></button>
+              <span className="flex-1 font-semibold truncate">{u.username}</span>
+              <button onClick={() => acceptRequest(u.requestId)} className="p-2 bg-green-500 rounded-full text-white mr-1 active:scale-95 transition-transform">
+                <Check className="w-4 h-4" />
+              </button>
+              <button onClick={() => rejectRequest(u.requestId)} className="p-2 bg-red-500 rounded-full text-white active:scale-95 transition-transform">
+                <X className="w-4 h-4" />
+              </button>
             </div>
           ))}
         </div>
       )}
 
+      {/* CURRENT ACTIVE FRIENDS LIST */}
       <div className="p-4">
-        <p className="text-slate-400 text-xs uppercase tracking-widest mb-3">Friends ({friends.length})</p>
+        <p className="text-slate-400 text-xs uppercase tracking-widest mb-3 font-bold">Friends ({friends.length})</p>
         {friends.length === 0 && <p className="text-slate-600 text-sm">No friends yet. Search to add some!</p>}
         {friends.map(f => (
           <div key={f.id} className="flex items-center gap-3 bg-white/5 rounded-xl p-3 mb-2">
-            <div className="w-10 h-10 rounded-full overflow-hidden bg-[#12122a] border border-amber-400">
-              <AvatarViewer index={0} size="small" />
+            <div className="w-10 h-10 rounded-full overflow-hidden bg-[#12122a] border border-amber-400 shrink-0">
+              {/* Dynamic Avatar Index Fix */}
+              <AvatarViewer index={parseInt(f.avatar_id) || 0} size="small" />
             </div>
-            <span className="flex-1 font-semibold">{f.username}</span>
-            <button onClick={() => removeFriend(f.id)} className="p-2 bg-white/10 rounded-full text-red-400">
+            <span className="flex-1 font-semibold truncate">{f.username}</span>
+            <button onClick={() => removeFriend(f.id)} className="p-2 bg-white/10 rounded-full text-red-400 hover:bg-red-500/10 active:scale-95 transition-all">
               <UserMinus className="w-4 h-4" />
             </button>
           </div>
