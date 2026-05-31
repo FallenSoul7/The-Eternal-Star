@@ -26,7 +26,7 @@ export interface GameInfo {
   images?: { url: string; width: number; height: number; alt: string; type: string }[]
 }
 
-// ── DigitalOcean Asset Config ───────────────────────────────────────────────
+// ── Avatar Dataset ──────────────────────────────────────────────────────────
 const AVATARS = [
   { 
     id: 'default', 
@@ -35,13 +35,22 @@ const AVATARS = [
   },
 ]
 
-// ── 3D Avatar Viewer ──────────────────────────────────────────────────────────
+// ── Adaptive 3D/2D Avatar Viewer ──────────────────────────────────────────────
 function AvatarViewer({ index, size = 'large' }: { index: number; size?: 'large' | 'small' }) {
   const mountRef = useRef<HTMLDivElement>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [loadError, setLoadError] = useState(false)
 
+  const avatarDef = AVATARS[index] ?? AVATARS[0]
+  const isDefaultAsset = avatarDef.id === 'default'
+
   useEffect(() => {
+    // Hard short-circuit: If it is the default DigitalOcean asset, do NOT trigger Three.js network load
+    if (isDefaultAsset) {
+      setIsLoading(false)
+      return
+    }
+
     const el = mountRef.current
     if (!el) return
 
@@ -84,8 +93,8 @@ function AvatarViewer({ index, size = 'large' }: { index: number; size?: 'large'
       scene.add(platform)
     }
 
-    const avatarDef = AVATARS[index] ?? AVATARS[0]
     const loader = new GLTFLoader()
+    loader.setCrossOrigin('anonymous')
     let loadedModel: THREE.Group | null = null
 
     loader.load(
@@ -120,7 +129,7 @@ function AvatarViewer({ index, size = 'large' }: { index: number; size?: 'large'
       },
       undefined,
       (error) => {
-        console.error('Failed to load character file asset from network layer:', error)
+        console.error('Custom Supabase model failed to parse:', error)
         setIsLoading(false)
         setLoadError(true)
       }
@@ -143,7 +152,28 @@ function AvatarViewer({ index, size = 'large' }: { index: number; size?: 'large'
       renderer.dispose()
       if (el.contains(renderer.domElement)) el.removeChild(renderer.domElement)
     }
-  }, [index, size])
+  }, [index, size, isDefaultAsset, avatarDef.url])
+
+  // Safe 2D fallback rendering UI for the default asset to insulate against network faults
+  if (isDefaultAsset) {
+    return (
+      <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-b from-[#161630] to-[#090914] p-4 text-center select-none">
+        {size === 'large' ? (
+          <>
+            <div className="w-20 h-20 rounded-full bg-amber-400/10 flex items-center justify-center border border-amber-400/30 mb-3 shadow-xl">
+              <User className="w-10 h-10 text-amber-400" />
+            </div>
+            <h3 className="text-white font-bold text-base tracking-wide">Default Hero</h3>
+            <p className="text-slate-400 text-xs mt-1 max-w-[220px]">
+              System default layout active. Custom 3D rendering unlocks when equipping Supabase characters.
+            </p>
+          </>
+        ) : (
+          <User className="w-5 h-5 text-amber-400" />
+        )}
+      </div>
+    )
+  }
 
   return (
     <div className="w-full h-full relative flex items-center justify-center">
