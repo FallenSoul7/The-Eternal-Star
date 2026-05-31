@@ -9,10 +9,11 @@ import {
   Home as HomeIcon, User, Settings as SettingsIcon,
   Sun, MonitorPlay, Cog, Plus, Search, X, Check,
   UserMinus, ArrowLeft, Upload, Code2, ChevronLeft,
-  ChevronRight, Github, Twitter
+  ChevronRight
 } from 'lucide-react'
 import Link from 'next/link'
 import * as THREE from 'three'
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
 
 export interface GameInfo {
   id: string
@@ -25,58 +26,13 @@ export interface GameInfo {
   images?: { url: string; width: number; height: number; alt: string; type: string }[]
 }
 
-// ── Real in-game character builder ────────────────────────────────────────────
-// This matches EXACTLY the blocky character rendered in the game via Three.js
-
-function buildRealCharacter(scene: THREE.Scene): THREE.Group {
-  const group = new THREE.Group()
-
-  // These colors/sizes match the actual in-game player mesh
-  const skinMat = new THREE.MeshStandardMaterial({ color: 0xffd6a5 })
-  const bodyMat = new THREE.MeshStandardMaterial({ color: 0x4a90d9 })
-  const legMat  = new THREE.MeshStandardMaterial({ color: 0x2c3e50 })
-
-  // Head
-  const head = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.8, 0.8), skinMat)
-  head.position.y = 1.65
-
-  // Torso
-  const torso = new THREE.Mesh(new THREE.BoxGeometry(1.0, 1.1, 0.5), bodyMat)
-  torso.position.y = 0.75
-
-  // Left arm
-  const lArm = new THREE.Mesh(new THREE.BoxGeometry(0.38, 1.0, 0.38), bodyMat)
-  lArm.position.set(-0.69, 0.75, 0)
-
-  // Right arm
-  const rArm = new THREE.Mesh(new THREE.BoxGeometry(0.38, 1.0, 0.38), bodyMat)
-  rArm.position.set(0.69, 0.75, 0)
-
-  // Left leg
-  const lLeg = new THREE.Mesh(new THREE.BoxGeometry(0.42, 1.05, 0.42), legMat)
-  lLeg.position.set(-0.28, -0.32, 0)
-
-  // Right leg
-  const rLeg = new THREE.Mesh(new THREE.BoxGeometry(0.42, 1.05, 0.42), legMat)
-  rLeg.position.set(0.28, -0.32, 0)
-
-  group.add(head, torso, lArm, rArm, lLeg, rLeg)
-  // Shift group so character stands on the platform
-  group.position.y = 0.52
-
-  group.traverse(c => {
-    if (c instanceof THREE.Mesh) {
-      c.castShadow = true
-    }
-  })
-
-  scene.add(group)
-  return group
-}
-
-// Only one avatar for now — 6P will be added when ready
+// ── Live 3D Avatar Asset List ────────────────────────────────────────────────
 const AVATARS = [
-  { id: 'default', name: 'Default', build: buildRealCharacter },
+  { 
+    id: 'default', 
+    name: 'Default Hero', 
+    url: 'https://notbloxo.fra1.cdn.digitaloceanspaces.com/Notblox-Assets/character/Character.glb' 
+  },
 ]
 
 // ── 3D Avatar Viewer ──────────────────────────────────────────────────────────
@@ -98,27 +54,25 @@ function AvatarViewer({ index, size = 'large' }: { index: number; size?: 'large'
 
     const scene = new THREE.Scene()
 
-    // Camera — zoomed in to show upper body in small mode (circle), full body in large
     const camera = new THREE.PerspectiveCamera(40, W / H, 0.1, 100)
     if (size === 'small') {
-      // Show head + upper chest only in the circle
-      camera.position.set(0, 1.9, 2.8)
-      camera.lookAt(0, 1.7, 0)
+      camera.position.set(0, 3.2, 2.5)
+      camera.lookAt(0, 3.0, 0)
     } else {
-      camera.position.set(0, 1.1, 4.5)
-      camera.lookAt(0, 1.0, 0)
+      camera.position.set(0, 2.2, 5.0)
+      camera.lookAt(0, 1.8, 0)
     }
 
-    scene.add(new THREE.AmbientLight(0xffffff, 0.7))
-    const dir = new THREE.DirectionalLight(0xffffff, 1.2)
-    dir.position.set(3, 6, 4)
+    scene.add(new THREE.AmbientLight(0xffffff, 0.8))
+    const dir = new THREE.DirectionalLight(0xffffff, 1.5)
+    dir.position.set(3, 8, 5)
     dir.castShadow = true
     scene.add(dir)
 
     if (size === 'large') {
       const platform = new THREE.Mesh(
         new THREE.CylinderGeometry(1.5, 1.5, 0.07, 48),
-        new THREE.MeshStandardMaterial({ color: 0x1a1a2e })
+        new THREE.MeshStandardMaterial({ color: 0x1a1a2e, roughness: 0.6 })
       )
       platform.position.y = -0.01
       platform.receiveShadow = true
@@ -126,14 +80,44 @@ function AvatarViewer({ index, size = 'large' }: { index: number; size?: 'large'
     }
 
     const avatarDef = AVATARS[index] ?? AVATARS[0]
-    const group = avatarDef.build(scene)
+    const loader = new GLTFLoader()
+    let loadedModel: THREE.Group | null = null
+
+    loader.load(
+      avatarDef.url,
+      (gltf) => {
+        loadedModel = gltf.scene
+
+        const box = new THREE.Box3().setFromObject(loadedModel)
+        const center = box.getCenter(new THREE.Vector3())
+        
+        loadedModel.position.x += (loadedModel.position.x - center.x)
+        loadedModel.position.z += (loadedModel.position.z - center.z)
+        loadedModel.position.y = 0
+
+        loadedModel.traverse((child: any) => {
+          if (child.isMesh) {
+            child.castShadow = true
+            child.receiveShadow = true
+          }
+        })
+
+        scene.add(loadedModel)
+      },
+      undefined,
+      (error) => {
+        console.error('Failed to load character file asset from network layer:', error)
+      }
+    )
 
     let angle = 0
     let animId: number
     const animate = () => {
       animId = requestAnimationFrame(animate)
-      angle += 0.012
-      group.rotation.y = angle
+      if (loadedModel) {
+        angle += 0.012
+        loadedModel.rotation.y = angle
+      }
       renderer.render(scene, camera)
     }
     animate()
@@ -171,7 +155,6 @@ function MapUploadPage({ userId, onBack }: { userId: string; onBack: () => void 
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
 
-  const ALLOWED_MAP = ['model/gltf-binary', 'application/octet-stream']
   const ALLOWED_ICON = ['image/png', 'image/jpeg', 'image/webp']
   const DANGEROUS = ['application/x-msdownload', 'application/x-sh', 'text/javascript',
     'application/javascript', 'application/x-executable', 'application/x-elf']
@@ -255,7 +238,6 @@ function MapUploadPage({ userId, onBack }: { userId: string; onBack: () => void 
         {error && <div className="bg-red-500/20 border border-red-500/40 rounded-xl p-3 text-red-400 text-sm">{error}</div>}
         {success && <div className="bg-green-500/20 border border-green-500/40 rounded-xl p-3 text-green-400 text-sm">Map created! Redirecting...</div>}
 
-        {/* Title */}
         <div>
           <label className="text-slate-400 text-xs uppercase tracking-widest mb-1 block">Map Title</label>
           <input
@@ -266,7 +248,6 @@ function MapUploadPage({ userId, onBack }: { userId: string; onBack: () => void 
           />
         </div>
 
-        {/* Icon drop */}
         <div>
           <label className="text-slate-400 text-xs uppercase tracking-widest mb-1 block">Map Icon</label>
           <label className="block w-full border-2 border-dashed border-white/20 rounded-xl p-6 text-center cursor-pointer hover:border-amber-400 transition-colors"
@@ -280,7 +261,6 @@ function MapUploadPage({ userId, onBack }: { userId: string; onBack: () => void 
           </label>
         </div>
 
-        {/* Map GLB drop */}
         <div>
           <label className="text-slate-400 text-xs uppercase tracking-widest mb-1 block">Map File (.glb)</label>
           <label className="block w-full border-2 border-dashed border-white/20 rounded-xl p-6 text-center cursor-pointer hover:border-amber-400 transition-colors"
@@ -485,11 +465,7 @@ export default function Home() {
   const [activeTab, setActiveTab] = useState('home')
   const [avatarIndex, setAvatarIndex] = useState(0)
   const [friends, setFriends] = useState<any[]>([])
-  
-  // 1. Add state to hold maps pulled from the database
   const [uploadedMaps, setUploadedMaps] = useState<GameInfo[]>([])
-
-  // Sub-pages
   const [page, setPage] = useState<'main' | 'friends' | 'upload' | 'devtools'>('main')
 
   useEffect(() => {
@@ -501,7 +477,6 @@ export default function Home() {
     return () => subscription.unsubscribe()
   }, [])
 
-  // 2. Fetch published maps from Supabase and format them for GameCard
   useEffect(() => {
     supabase
       .from('maps')
@@ -510,20 +485,19 @@ export default function Home() {
       .order('created_at', { ascending: false })
       .then(({ data }) => {
         if (data) {
-          // Map database fields (like icon_url) to match what GameCard expects (imageUrl)
           const formatted: GameInfo[] = data.map(map => ({
             id: map.id,
             title: map.title,
             slug: map.slug,
             imageUrl: map.icon_url || '', 
-            websocketPort: 8080, // Default fallback port
+            websocketPort: 8080,
             metaDescription: `Created by user`,
             markdown: ''
           }))
           setUploadedMaps(formatted)
         }
       })
-  }, [page]) // Refetches when returning from the upload page
+  }, [page])
 
   useEffect(() => {
     if (!session) return
@@ -546,15 +520,12 @@ export default function Home() {
   if (!session) return <AuthGateway onAuthSuccess={() => {}} />
 
   const staticGames = gameData as GameInfo[]
-  
-  // 3. Combine both lists: Dynamic database maps show first, followed by static JSON games
   const allGames = [...uploadedMaps, ...staticGames]
   
   const email = session.user.email ?? ''
   const username = email.split('@')[0]
   const uid = session.user.id
 
-  // ── Sub-pages ────────────────────────────────────────────────────────────
   if (page === 'friends') return <FriendsPanel session={session} onBack={() => setPage('main')} />
   if (page === 'upload') return <MapUploadPage userId={uid} onBack={() => setPage('main')} />
   if (page === 'devtools') return <DevToolsPage userId={uid} onBack={() => setPage('main')} />
@@ -562,16 +533,10 @@ export default function Home() {
   // ── HOME tab ──────────────────────────────────────────────────────────────
   const renderHome = () => (
     <div className="pb-24">
-      {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-slate-800">
         <span className="text-white font-black text-lg tracking-tight">The Eternal Star</span>
-        <div className="flex items-center gap-3">
-          <Link href="https://github.com" target="_blank" className="text-slate-400"><Github size={20} /></Link>
-          <Link href="https://twitter.com" target="_blank" className="text-slate-400"><Twitter size={20} /></Link>
-        </div>
       </div>
 
-      {/* Friend circles row */}
       <div className="px-4 mt-4 flex items-center gap-3 overflow-x-auto no-scrollbar pb-2">
         <div className="flex flex-col items-center gap-1 shrink-0">
           <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-amber-400 bg-[#12122a]">
@@ -592,7 +557,6 @@ export default function Home() {
         </button>
       </div>
 
-      {/* Last Played — Uses allGames now */}
       <section className="px-4 mt-6">
         <h2 className="text-lg font-bold text-slate-300 mb-3">Last Played</h2>
         <div className="flex overflow-x-auto space-x-4 pb-4 no-scrollbar">
@@ -602,7 +566,6 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Discover — Uses allGames now */}
       <div className="px-4 mt-6">
         <h2 className="text-lg font-bold text-slate-300 mb-3">Discover</h2>
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
