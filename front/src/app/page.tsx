@@ -26,7 +26,7 @@ export interface GameInfo {
   images?: { url: string; width: number; height: number; alt: string; type: string }[]
 }
 
-// ── Live 3D Avatar Asset List ────────────────────────────────────────────────
+// ── DigitalOcean Asset Config ───────────────────────────────────────────────
 const AVATARS = [
   { 
     id: 'default', 
@@ -58,21 +58,16 @@ function AvatarViewer({ index, size = 'large' }: { index: number; size?: 'large'
     el.appendChild(renderer.domElement)
 
     const scene = new THREE.Scene()
-
     const camera = new THREE.PerspectiveCamera(45, W / H, 0.1, 100)
     
-    // Position camera based on normalized asset size (height normalized to 2 units)
     if (size === 'small') {
-      // Focused headshot close-up view
       camera.position.set(0, 1.45, 1.1)
       camera.lookAt(0, 1.45, 0)
     } else {
-      // Full body framing
       camera.position.set(0, 1.1, 3.2)
       camera.lookAt(0, 1.0, 0)
     }
 
-    // Lighting config
     scene.add(new THREE.AmbientLight(0xffffff, 0.9))
     const dir = new THREE.DirectionalLight(0xffffff, 1.6)
     dir.position.set(3, 8, 5)
@@ -98,17 +93,14 @@ function AvatarViewer({ index, size = 'large' }: { index: number; size?: 'large'
       (gltf) => {
         loadedModel = gltf.scene
 
-        // Calculate exact boundaries to auto-scale assets perfectly
         const box = new THREE.Box3().setFromObject(loadedModel)
         const center = box.getCenter(new THREE.Vector3())
         const sizeBox = box.getSize(new THREE.Vector3())
 
-        // Re-center model pivot points cleanly
         loadedModel.position.x -= center.x
         loadedModel.position.z -= center.z
-        loadedModel.position.y -= box.min.y // Force feet to stick directly on Y = 0 ground level
+        loadedModel.position.y -= box.min.y 
 
-        // Normalize scaling to a fixed height of 2 units tall
         const maxDim = Math.max(sizeBox.x, sizeBox.y, sizeBox.z)
         if (maxDim > 0) {
           const normScale = 2.0 / maxDim
@@ -119,7 +111,6 @@ function AvatarViewer({ index, size = 'large' }: { index: number; size?: 'large'
           if (child.isMesh) {
             child.castShadow = true
             child.receiveShadow = true
-            // Prevent transparent asset parts from discarding depths
             if (child.material) child.material.depthWrite = true
           }
         })
@@ -147,7 +138,6 @@ function AvatarViewer({ index, size = 'large' }: { index: number; size?: 'large'
     }
     animate()
 
-    // Clean up context loops
     return () => {
       cancelAnimationFrame(animId)
       renderer.dispose()
@@ -164,7 +154,7 @@ function AvatarViewer({ index, size = 'large' }: { index: number; size?: 'large'
       )}
       {loadError && (
         <div className="absolute inset-0 flex items-center justify-center bg-red-950/20 z-10">
-          <span className="text-[10px] text-red-400 font-bold">Error</span>
+          <span className="text-[10px] text-red-400 font-bold">Error Loading</span>
         </div>
       )}
       <div ref={mountRef} className="w-full h-full" />
@@ -230,7 +220,6 @@ function MapUploadPage({ userId, onBack }: { userId: string; onBack: () => void 
     try {
       const slug = title.trim().toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')
 
-      // Upload icon
       const iconExt = iconFile.name.split('.').pop()
       const iconPath = `map-icons/${slug}-${Date.now()}.${iconExt}`
       const { error: iconErr } = await supabase.storage
@@ -239,7 +228,6 @@ function MapUploadPage({ userId, onBack }: { userId: string; onBack: () => void 
 
       const { data: iconData } = supabase.storage.from('game-assets').getPublicUrl(iconPath)
 
-      // Upload map GLB
       const mapPath = `user-maps/${userId}/${slug}-${Date.now()}.glb`
       const { error: mapErr } = await supabase.storage
         .from('game-assets').upload(mapPath, mapFile, { upsert: true })
@@ -247,7 +235,6 @@ function MapUploadPage({ userId, onBack }: { userId: string; onBack: () => void 
 
       const { data: mapData } = supabase.storage.from('game-assets').getPublicUrl(mapPath)
 
-      // Save to maps table
       const { error: dbErr } = await supabase.from('maps').insert({
         owner_id: userId,
         title: title.trim(),
@@ -544,10 +531,10 @@ export default function Home() {
     const uid = session.user.id
     supabase.from('friend_requests')
       .select('*, from:from_id(id,username,avatar_id), to:to_id(id,username,avatar_id)')
-      .or(`from_id.eq.${uid},to_id.eq.${uid}`)
+      .or(`and(from_id.eq.${uid},status.eq.accepted),and(to_id.eq.${uid},status.eq.accepted)`)
       .then(({ data }) => {
         if (!data) return
-        setFriends(data.filter(r => r.status === 'accepted').map(r => r.from_id === uid ? r.to : r.from))
+        setFriends(data.map(r => r.from_id === uid ? r.to : r.from))
       })
   }, [session])
 
