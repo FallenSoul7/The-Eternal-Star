@@ -612,7 +612,8 @@ export default function Home() {
         <span className="text-white font-black text-lg tracking-tight">The Eternal Star</span>
       </div>
 
-      <div className="px-4 mt-4 flex items-center gap-3 overflow-x-auto no-scrollbar pb-2">
+            <div className="px-4 mt-4 flex items-center gap-3 overflow-x-auto no-scrollbar pb-2">
+        {/* 1. YOUR AVATAR */}
         <div className="flex flex-col items-center gap-1 shrink-0">
           <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-amber-400 bg-[#12122a]">
             <AvatarViewer index={avatarIndex} size="small" />
@@ -620,16 +621,18 @@ export default function Home() {
           <span className="text-white text-xs font-semibold max-w-[64px] truncate">{username}</span>
         </div>
 
-        {friends.map(f => (
-          <FriendCircle key={f.id} username={f.username} avatarId={f.avatar_id ?? 'default'} />
-        ))}
-
+        {/* 2. ADD FRIEND BUTTON (Moved to be second) */}
         <button onClick={() => setPage('friends')} className="flex flex-col items-center gap-1 shrink-0 active:scale-95">
           <div className="w-16 h-16 rounded-full border-2 border-dashed border-slate-600 flex items-center justify-center bg-white/5">
             <Plus className="w-6 h-6 text-slate-400" />
           </div>
           <span className="text-slate-500 text-xs">Add</span>
         </button>
+
+        {/* 3. YOUR FRIENDS (Moved to be last, so it grows to the right) */}
+        {friends.map(f => (
+          <FriendCircle key={f.id} username={f.username} avatarId={f.avatar_id ?? 'default'} />
+        ))}
       </div>
 
       <section className="px-4 mt-6">
