@@ -533,7 +533,8 @@ function FriendsPanel({ session, onBack }: { session: Session; onBack: () => voi
   )
 }
 
-// ── Main Page ──────────────────────────────────────────────────────────────────
+
+ // ── Main Page ──────────────────────────────────────────────────────────────────
 export default function Home() {
   const [session, setSession] = useState<Session | null>(null)
   const [loading, setLoading] = useState(true)
@@ -542,6 +543,9 @@ export default function Home() {
   const [friends, setFriends] = useState<any[]>([])
   const [uploadedMaps, setUploadedMaps] = useState<GameInfo[]>([])
   const [page, setPage] = useState<'main' | 'friends' | 'upload' | 'devtools'>('main')
+  
+  // New Search State for Maps
+  const [mapSearchQuery, setMapSearchQuery] = useState('')
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -606,56 +610,96 @@ export default function Home() {
   if (page === 'devtools') return <DevToolsPage userId={uid} onBack={() => setPage('main')} />
 
   // ── HOME tab ──────────────────────────────────────────────────────────────
-  const renderHome = () => (
-    <div className="pb-24">
-      <div className="flex items-center justify-between px-4 py-3 border-b border-slate-800">
-        <span className="text-white font-black text-lg tracking-tight">The Eternal Star</span>
-      </div>
+  const renderHome = () => {
+    // 1. Filter games based on what is typed in the search bar
+    const filteredGames = allGames.filter(game => 
+      game.title.toLowerCase().includes(mapSearchQuery.toLowerCase())
+    )
 
-            <div className="px-4 mt-4 flex items-center gap-3 overflow-x-auto no-scrollbar pb-2">
-        {/* 1. YOUR AVATAR */}
-        <div className="flex flex-col items-center gap-1 shrink-0">
-          <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-amber-400 bg-[#12122a]">
-            <AvatarViewer index={avatarIndex} size="small" />
-          </div>
-          <span className="text-white text-xs font-semibold max-w-[64px] truncate">{username}</span>
-        </div>
-
-        {/* 2. ADD FRIEND BUTTON (Moved to be second) */}
-        <button onClick={() => setPage('friends')} className="flex flex-col items-center gap-1 shrink-0 active:scale-95">
-          <div className="w-16 h-16 rounded-full border-2 border-dashed border-slate-600 flex items-center justify-center bg-white/5">
-            <Plus className="w-6 h-6 text-slate-400" />
-          </div>
-          <span className="text-slate-500 text-xs">Add</span>
-        </button>
-
-        {/* 3. YOUR FRIENDS (Moved to be last, so it grows to the right) */}
-        {friends.map(f => (
-          <FriendCircle key={f.id} username={f.username} avatarId={f.avatar_id ?? 'default'} />
-        ))}
-      </div>
-
-      <section className="px-4 mt-6">
-        <h2 className="text-lg font-bold text-slate-300 mb-3">Last Played</h2>
-        <div className="flex overflow-x-auto space-x-4 pb-4 no-scrollbar">
-          {allGames.slice(0, 5).map((game, i) => (
-            <div key={i} className="shrink-0 w-40"><GameCard {...game} /></div>
-          ))}
-        </div>
-      </section>
-
-      <div className="px-4 mt-6">
-        <h2 className="text-lg font-bold text-slate-300 mb-3">Discover</h2>
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-          {allGames.map((game, i) => (
-            <div key={i} className={i === allGames.length - 1 && allGames.length % 2 !== 0 ? 'md:col-span-2' : ''}>
-              <GameCard {...game} />
+    return (
+      <div className="pb-24">
+        {/* ── TOP HEADER (User Profile + Map Search) ── */}
+        <div className="flex items-center justify-between px-4 py-3 border-b border-slate-800 gap-4">
+          
+          {/* Your Profile (Replaced "The Eternal Star") */}
+          <div className="flex items-center gap-3 shrink-0">
+            <div className="w-10 h-10 rounded-full overflow-hidden border-2 border-amber-400 bg-[#12122a]">
+              <AvatarViewer index={avatarIndex} size="small" />
             </div>
+            <span className="text-white font-bold text-sm tracking-tight truncate max-w-[100px]">{username}</span>
+          </div>
+
+          {/* Map Search Bar */}
+          <div className="flex-1 relative max-w-[200px]">
+            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+            <input
+              type="text"
+              placeholder="Search maps..."
+              value={mapSearchQuery}
+              onChange={(e) => setMapSearchQuery(e.target.value)}
+              className="w-full bg-white/10 rounded-full pl-9 pr-4 py-2 text-xs text-white outline-none border border-transparent focus:border-amber-400/50 transition-colors"
+            />
+          </div>
+        </div>
+
+        {/* ── HORIZONTAL FRIENDS ROW ── */}
+        <div className="px-4 mt-4 flex items-center gap-3 overflow-x-auto no-scrollbar pb-2">
+          {/* 1. Add Friend Button (Pinned First) */}
+          <button onClick={() => setPage('friends')} className="flex flex-col items-center gap-1 shrink-0 active:scale-95">
+            <div className="w-16 h-16 rounded-full border-2 border-dashed border-slate-600 flex items-center justify-center bg-white/5">
+              <Plus className="w-6 h-6 text-slate-400" />
+            </div>
+            <span className="text-slate-500 text-xs">Add</span>
+          </button>
+
+          {/* 2. Your Friends List */}
+          {friends.map(f => (
+            <FriendCircle key={f.id} username={f.username} avatarId={f.avatar_id ?? 'default'} />
           ))}
         </div>
+
+        {/* ── MAP GRIDS (Search Results or Default View) ── */}
+        {mapSearchQuery.trim() !== '' ? (
+          /* SHOW THIS IF TYPING IN SEARCH BAR */
+          <div className="px-4 mt-6">
+            <h2 className="text-lg font-bold text-slate-300 mb-3">Search Results</h2>
+            {filteredGames.length > 0 ? (
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                {filteredGames.map((game, i) => (
+                  <div key={i}><GameCard {...game} /></div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-slate-500 text-sm">No maps found matching "{mapSearchQuery}".</p>
+            )}
+          </div>
+        ) : (
+          /* SHOW THIS DEFAULT VIEW IF SEARCH BAR IS EMPTY */
+          <>
+            <section className="px-4 mt-6">
+              <h2 className="text-lg font-bold text-slate-300 mb-3">Last Played</h2>
+              <div className="flex overflow-x-auto space-x-4 pb-4 no-scrollbar">
+                {allGames.slice(0, 5).map((game, i) => (
+                  <div key={i} className="shrink-0 w-40"><GameCard {...game} /></div>
+                ))}
+              </div>
+            </section>
+
+            <div className="px-4 mt-6">
+              <h2 className="text-lg font-bold text-slate-300 mb-3">Discover</h2>
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                {allGames.map((game, i) => (
+                  <div key={i} className={i === allGames.length - 1 && allGames.length % 2 !== 0 ? 'md:col-span-2' : ''}>
+                    <GameCard {...game} />
+                  </div>
+                ))}
+              </div>
+            </div>
+          </>
+        )}
       </div>
-    </div>
-  )
+    )
+  }
 
   // ── AVATAR tab ────────────────────────────────────────────────────────────
   const renderAvatar = () => (
