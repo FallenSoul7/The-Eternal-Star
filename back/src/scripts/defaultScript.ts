@@ -23,262 +23,145 @@ function randomHexColor() {
   return '#' + '0'.repeat(6 - hex.length) + hex
 }
 
-// ✅ FIXED: Dynamically load user-created maps! 
-// If your server passes process.env.CURRENT_MAP_URL, it loads their custom map. 
-// Otherwise, it falls back to the default Village map.
+// 1. Check if the server passed a custom user map URL
+const isCustomMap = !!process.env.CURRENT_MAP_URL;
+
+// 2. Load the map (Custom if it exists, otherwise Default Village)
 const mapUrl = process.env.CURRENT_MAP_URL || 'https://qynwojpluhxhvwiqmstz.supabase.co/storage/v1/object/public/game-assets/Untitled%20folder/Village%20obbesy.glb'
 new MapWorld(mapUrl)
 
 
-// === Basic Entity Creation Examples ===
+// ============================================================================
+// 3. ONLY SPAWN EXTRAS IF THIS IS THE DEFAULT MAP
+// If a user uploaded a custom map, this entire block is ignored automatically!
+// ============================================================================
+if (!isCustomMap) {
 
-// Create a basic cube
-const basicCubeParams = {
-  position: { x: 0, y: 5, z: -50 },
-  size: { width: 3, height: 3, depth: 3 },
-}
-new Cube(basicCubeParams)
-
-// Create physics-enabled sphere with a white color
-const basicSphereParams = {
-  position: { x: 5, y: 10, z: -10 },
-  radius: 6,
-  color: '#ffffff',
-}
-new Sphere(basicSphereParams)
-
-// === Interactive Trigger Zone Example ===
-const triggerCube = new TriggerCube(
-  -100,
-  -5,
-  -200, 
-  8,
-  8,
-  8, 
-  (entity) => {
-    if (entity.getComponent(PlayerComponent)) {
-      console.log('Invisible trigger zone: Player entered the zone!')
-      entity
-        .getComponent(DynamicRigidBodyComponent)!
-        .body!.applyImpulse(new Rapier.Vector3(0, 9000, 0), true)
-    }
-  },
-  (entity) => {
-    if (entity.getComponent(PlayerComponent)) {
-      console.log('Invisible trigger zone: Player left the zone!')
-    }
-  },
-  true 
-)
-triggerCube.entity.addNetworkComponent(
-  new TextComponent(triggerCube.entity.id, 'Trampoline', 0, 2, 0, 30)
-)
-
-// === Interactive Object Example ===
-for (let i = 0; i < 2; i++) {
-  const interactiveCubeParams = {
-    position: { x: 0, y: 5, z: -100 },
-    size: { width: 2, height: 2, depth: 2 },
-    physicsProperties: {
-      enableCcd: true,
-    },
+  // Create a basic cube
+  const basicCubeParams = {
+    position: { x: 0, y: 5, z: -50 },
+    size: { width: 3, height: 3, depth: 3 },
   }
-  const interactiveCube = new Cube(interactiveCubeParams)
-  interactiveCube.entity.addComponent(
-    new OnCollisionEnterEvent(interactiveCube.entity.id, (collidedWithEntity) => {
-      if (collidedWithEntity.getComponent(PlayerComponent)) {
-        EventSystem.addEvent(new ColorEvent(interactiveCube.entity.id, randomHexColor()))
+  new Cube(basicCubeParams)
 
-        const rigidBody = interactiveCube.entity.getComponent(DynamicRigidBodyComponent)
-        if (rigidBody) {
-          rigidBody.body!.applyImpulse(new Rapier.Vector3(0, 5000, 0), true)
-        }
+  // Create physics-enabled sphere with a white color
+  const basicSphereParams = {
+    position: { x: 5, y: 10, z: -10 },
+    radius: 6,
+    color: '#ffffff',
+  }
+  new Sphere(basicSphereParams)
+
+  // Interactive Trigger Zone
+  const triggerCube = new TriggerCube(
+    -100, -5, -200, 8, 8, 8, 
+    (entity) => {
+      if (entity.getComponent(PlayerComponent)) {
+        entity.getComponent(DynamicRigidBodyComponent)!.body!.applyImpulse(new Rapier.Vector3(0, 9000, 0), true)
       }
+    },
+    (entity) => {},
+    true 
+  )
+  triggerCube.entity.addNetworkComponent(new TextComponent(triggerCube.entity.id, 'Trampoline', 0, 2, 0, 30))
+
+  // Interactive Object
+  for (let i = 0; i < 2; i++) {
+    const interactiveCube = new Cube({
+      position: { x: 0, y: 5, z: -100 },
+      size: { width: 2, height: 2, depth: 2 },
+      physicsProperties: { enableCcd: true },
     })
-  )
-}
-
-// ✅ FIXED: Zombie now uses your working Character asset link
-const zombie = new Mesh({
-  position: {
-    x: -100,
-    y: 10,
-    z: 100,
-  },
-  meshUrl: 'https://qynwojpluhxhvwiqmstz.supabase.co/storage/v1/object/public/game-assets/Character.glb',
-  physicsProperties: {
-    mass: 1,
-    angularDamping: 0.5,
-    enableCcd: true,
-  },
-  colliderProperties: {
-    restitution: 0.7,
-  },
-})
-zombie.entity.addNetworkComponent(new ColorComponent(zombie.entity.id, 'default'))
-zombie.entity.addComponent(new ZombieComponent(zombie.entity.id))
-zombie.entity.addNetworkComponent(new TextComponent(zombie.entity.id, '🤪 Zombie guy', 0, 2, 0))
-
-const cube = new Cube({
-  position: {
-    x: 100,
-    y: 10,
-    z: 100,
-  },
-  physicsProperties: {
-    mass: 1,
-    angularDamping: 0.5,
-  },
-})
-const proximityPromptComponent = new ProximityPromptComponent(cube.entity.id, {
-  text: 'Press E to change color',
-  onInteract: () => {
-    cube.entity
-      .getComponent(DynamicRigidBodyComponent)!
-      .body!.applyImpulse(new Rapier.Vector3(0, 5, 0), true)
-
-    const colorComponent = cube.entity.getComponent(ColorComponent)
-    if (colorComponent) {
-      colorComponent.color = '#' + Math.floor(Math.random() * 16777215).toString(16)
-      colorComponent.updated = true
-    }
-  },
-  maxInteractDistance: 10,
-  interactionCooldown: 200,
-  holdDuration: 0,
-})
-cube.entity.addNetworkComponent(proximityPromptComponent)
-
-for (let i = -3; i < 6; i++) {
-  if (i === 0) continue
-  const x = 5 * -i
-  const y = 5
-  const z = 20 * i
-  const car = new Car({
-    position: { x, y, z },
-  })
-  car.entity.addComponent(new SpawnPositionComponent(car.entity.id, x, y, z))
-}
-
-// Create a row of cars with varying wheel sizes
-for (let i = 1; i < 10; i++) {
-  const x = -140 + 5 * -i
-  const y = 5
-  const z = 20 * i
-
-  let wheelConfig: Record<string, number>
-  if (i < 5) {
-    wheelConfig = {
-      frontLeft: Math.max(1, i / 2.5),
-      frontRight: Math.max(1, i / 2.5),
-      backLeft: 1.4,
-      backRight: 1.4,
-    }
-  } else {
-    wheelConfig = {
-      frontLeft: 1.4,
-      frontRight: 1.4,
-      backLeft: Math.max(1, (10 - i) / 2.5),
-      backRight: Math.max(1, (10 - i) / 2.5),
-    }
-  }
-
-  // ✅ FIXED: Using your valid Car asset URL
-  const car = new Car({
-    position: { x, y, z },
-    name: 'Weird Car',
-    meshUrl: 'https://qynwojpluhxhvwiqmstz.supabase.co/storage/v1/object/public/game-assets/Untitled%20folder/Car.glb',
-    wheelRadius: wheelConfig,
-    color: randomHexColor(),
-  })
-  car.entity.addComponent(new SpawnPositionComponent(car.entity.id, x, y, z))
-}
-
-// ✅ FIXED: Using your valid Car asset URL
-const noWheelCar = new Car({
-  position: { x: 0, y: 5, z: -500 },
-  name: 'Weird Car',
-  meshUrl: 'https://qynwojpluhxhvwiqmstz.supabase.co/storage/v1/object/public/game-assets/Untitled%20folder/Car.glb',
-})
-noWheelCar.entity.addComponent(new SpawnPositionComponent(noWheelCar.entity.id, 250, 20, -500))
-
-// ✅ FIXED: Using your valid Car asset URL
-const mainCar = new Car({
-  position: { x: 0, y: 5, z: -500 },
-  name: 'Weird Car',
-  meshUrl: 'https://qynwojpluhxhvwiqmstz.supabase.co/storage/v1/object/public/game-assets/Untitled%20folder/Car.glb',
-})
-mainCar.entity.addComponent(new SpawnPositionComponent(mainCar.entity.id, 150, 20, -500))
-
-// Flying Car 
-// ✅ FIXED: Using your valid Car asset URL
-new Car({
-  position: { x: 0, y: 20, z: -500 },
-  meshUrl: 'https://qynwojpluhxhvwiqmstz.supabase.co/storage/v1/object/public/game-assets/Untitled%20folder/Car.glb',
-  physicsProperties: {
-    gravityScale: 0.05,
-    enableCcd: true,
-  },
-  name: 'Flying Car',
-  color: '#78b5ff',
-})
-
-// Football test
-function spawnFootballBall() {
-  const ballSpawnPosition = { x: 0, y: 20, z: -10 }
-
-  const sphereParams = {
-    radius: 1.4,
-    position: {
-      x: ballSpawnPosition.x,
-      y: ballSpawnPosition.y,
-      z: ballSpawnPosition.z,
-    },
-    // ✅ FIXED: Swapped out dead link for your Cat asset link as a safe placeholder
-    meshUrl: 'https://qynwojpluhxhvwiqmstz.supabase.co/storage/v1/object/public/game-assets/Cat.glb',
-    physicsProperties: {
-      mass: 1,
-      enableCcd: true,
-      angularDamping: 0.5,
-      linearDamping: 0.5,
-    },
-    colliderProperties: {
-      friction: 0.4,
-      restitution: 0.8,
-    },
-  }
-
-  const ball = new Sphere(sphereParams)
-  ball.entity.addComponent(
-    new SpawnPositionComponent(
-      ball.entity.id,
-      ballSpawnPosition.x,
-      ballSpawnPosition.y,
-      ballSpawnPosition.z
+    interactiveCube.entity.addComponent(
+      new OnCollisionEnterEvent(interactiveCube.entity.id, (collidedWithEntity) => {
+        if (collidedWithEntity.getComponent(PlayerComponent)) {
+          EventSystem.addEvent(new ColorEvent(interactiveCube.entity.id, randomHexColor()))
+          const rigidBody = interactiveCube.entity.getComponent(DynamicRigidBodyComponent)
+          if (rigidBody) rigidBody.body!.applyImpulse(new Rapier.Vector3(0, 5000, 0), true)
+        }
+      })
     )
-  )
+  }
 
-  const ballPrompt = new ProximityPromptComponent(ball.entity.id, {
+  // Zombie (Fixed URL to prevent crashing if default map loads)
+  const zombie = new Mesh({
+    position: { x: -100, y: 10, z: 100 },
+    meshUrl: 'https://notbloxo.fra1.cdn.digitaloceanspaces.com/Notblox-Assets/character/Character.glb',
+    physicsProperties: { mass: 1, angularDamping: 0.5, enableCcd: true },
+    colliderProperties: { restitution: 0.7 },
+  })
+  zombie.entity.addNetworkComponent(new ColorComponent(zombie.entity.id, 'default'))
+  zombie.entity.addComponent(new ZombieComponent(zombie.entity.id))
+  zombie.entity.addNetworkComponent(new TextComponent(zombie.entity.id, '🤪 Zombie guy', 0, 2, 0))
+
+  // Color Changing Cube
+  const cube = new Cube({
+    position: { x: 100, y: 10, z: 100 },
+    physicsProperties: { mass: 1, angularDamping: 0.5 },
+  })
+  const proximityPromptComponent = new ProximityPromptComponent(cube.entity.id, {
+    text: 'Press E to change color',
+    onInteract: () => {
+      cube.entity.getComponent(DynamicRigidBodyComponent)!.body!.applyImpulse(new Rapier.Vector3(0, 5, 0), true)
+      const colorComponent = cube.entity.getComponent(ColorComponent)
+      if (colorComponent) {
+        colorComponent.color = '#' + Math.floor(Math.random() * 16777215).toString(16)
+        colorComponent.updated = true
+      }
+    },
+    maxInteractDistance: 10,
+    interactionCooldown: 200,
+    holdDuration: 0,
+  })
+  cube.entity.addNetworkComponent(proximityPromptComponent)
+
+  // Cars
+  for (let i = -3; i < 6; i++) {
+    if (i === 0) continue
+    const x = 5 * -i, y = 5, z = 20 * i
+    const car = new Car({ position: { x, y, z } })
+    car.entity.addComponent(new SpawnPositionComponent(car.entity.id, x, y, z))
+  }
+
+  for (let i = 1; i < 10; i++) {
+    const x = -140 + 5 * -i, y = 5, z = 20 * i
+    let wheelConfig = i < 5 
+      ? { frontLeft: Math.max(1, i / 2.5), frontRight: Math.max(1, i / 2.5), backLeft: 1.4, backRight: 1.4 }
+      : { frontLeft: 1.4, frontRight: 1.4, backLeft: Math.max(1, (10 - i) / 2.5), backRight: Math.max(1, (10 - i) / 2.5) }
+
+    const car = new Car({
+      position: { x, y, z },
+      name: 'Weird Car',
+      meshUrl: 'https://qynwojpluhxhvwiqmstz.supabase.co/storage/v1/object/public/game-assets/Untitled%20folder/Car.glb',
+      wheelRadius: wheelConfig,
+      color: randomHexColor(),
+    })
+    car.entity.addComponent(new SpawnPositionComponent(car.entity.id, x, y, z))
+  }
+
+  // Football
+  const ballSpawnPosition = { x: 0, y: 20, z: -10 }
+  const ball = new Sphere({
+    radius: 1.4,
+    position: { x: ballSpawnPosition.x, y: ballSpawnPosition.y, z: ballSpawnPosition.z },
+    meshUrl: 'https://qynwojpluhxhvwiqmstz.supabase.co/storage/v1/object/public/game-assets/Cat.glb', // Fixed fallback URL
+    physicsProperties: { mass: 1, enableCcd: true, angularDamping: 0.5, linearDamping: 0.5 },
+    colliderProperties: { friction: 0.4, restitution: 0.8 },
+  })
+  ball.entity.addComponent(new SpawnPositionComponent(ball.entity.id, ballSpawnPosition.x, ballSpawnPosition.y, ballSpawnPosition.z))
+  ball.entity.addNetworkComponent(new ProximityPromptComponent(ball.entity.id, {
     text: 'Kick',
     onInteract: (playerEntity) => {
       const ballRigidbody = ball.entity.getComponent(DynamicRigidBodyComponent)
       const playerRotationComponent = playerEntity.getComponent(RotationComponent)
-
       if (ballRigidbody && playerRotationComponent && playerEntity.getComponent(InputComponent)) {
         const direction = playerRotationComponent.getForwardDirection()
-        const playerLookingDirectionVector = new Rapier.Vector3(
-          direction.x * 1500,
-          0,
-          direction.z * 1500
-        )
-        ballRigidbody.body!.applyImpulse(playerLookingDirectionVector, true)
+        ballRigidbody.body!.applyImpulse(new Rapier.Vector3(direction.x * 1500, 0, direction.z * 1500), true)
       }
     },
     maxInteractDistance: 10,
     interactionCooldown: 2000,
     holdDuration: 0,
-  })
-  ball.entity.addNetworkComponent(ballPrompt)
-}
+  }))
 
-spawnFootballBall()
+} // <-- End of the "If Not Custom Map" block
