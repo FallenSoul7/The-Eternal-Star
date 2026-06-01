@@ -636,15 +636,8 @@ export default function Home() {
         </div>
       </div>
 
-      {/* HORIZONTAL FRIENDS ROW (You -> Add -> Friends) */}
+      {/* HORIZONTAL FRIENDS ROW (Add -> Friends) */}
       <div className="px-4 mt-4 flex items-center gap-3 overflow-x-auto no-scrollbar pb-2">
-        <div className="flex flex-col items-center gap-1 shrink-0">
-          <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-amber-400 bg-[#12122a]">
-            <AvatarViewer index={avatarIndex} size="small" />
-          </div>
-          <span className="text-white text-xs font-semibold max-w-[64px] truncate">{username}</span>
-        </div>
-
         <button onClick={() => setPage('friends')} className="flex flex-col items-center gap-1 shrink-0 active:scale-95">
           <div className="w-16 h-16 rounded-full border-2 border-dashed border-slate-600 flex items-center justify-center bg-white/5">
             <Plus className="w-6 h-6 text-slate-400" />
@@ -664,7 +657,9 @@ export default function Home() {
           {filteredGames.length > 0 ? (
             <div className="grid grid-cols-2 gap-3">
               {filteredGames.map((game, i) => (
-                <div key={i}><GameCard {...game} /></div>
+                <Link key={i} href={`/play/${game.slug}`} className="block">
+                  <GameCard {...game} />
+                </Link>
               ))}
             </div>
           ) : (
@@ -676,9 +671,10 @@ export default function Home() {
           <section className="px-4 mt-6">
             <h2 className="text-lg font-bold text-slate-300 mb-3">Last Played</h2>
             <div className="flex overflow-x-auto gap-4 pb-4 no-scrollbar">
-              {/* Changed width from w-40 to w-48 (exactly 20% wider, forcing 20% taller proportionally) */}
               {allGames.slice(0, 5).map((game, i) => (
-                <div key={i} className="shrink-0 w-48"><GameCard {...game} /></div>
+                <Link key={i} href={`/play/${game.slug}`} className="shrink-0 w-48 block">
+                  <GameCard {...game} />
+                </Link>
               ))}
             </div>
           </section>
@@ -687,9 +683,9 @@ export default function Home() {
             <h2 className="text-lg font-bold text-slate-300 mb-3">Discover</h2>
             <div className="grid grid-cols-2 gap-3">
               {allGames.map((game, i) => (
-                <div key={i}>
+                <Link key={i} href={`/play/${game.slug}`} className="block">
                   <GameCard {...game} />
-                </div>
+                </Link>
               ))}
             </div>
           </section>
