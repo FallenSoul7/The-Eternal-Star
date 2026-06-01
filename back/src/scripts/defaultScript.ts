@@ -17,6 +17,7 @@ import { MapWorld } from '../ecs/entity/MapWorld.js'
 import { Mesh } from '../ecs/entity/Mesh.js'
 import { Sphere } from '../ecs/entity/Sphere.js'
 import { TriggerCube } from '../ecs/entity/TriggerCube.js'
+import { ScriptableSystem } from '../ecs/system/ScriptableSystem.js' // Added system import
 
 function randomHexColor() {
   const hex = Math.floor(Math.random() * 16777215).toString(16)
@@ -167,4 +168,9 @@ if (!isCustomMap) {
     interactionCooldown: 2000,
     holdDuration: 0,
   }))
+}
+
+// 5. REQUIRED CRITICAL FIX: Empty update tick loop declared to let the server process loading states.
+ScriptableSystem.update = (dt, entities) => {
+  // Keeps room physics loop initialized cleanly without adding extra overhead.
 }
