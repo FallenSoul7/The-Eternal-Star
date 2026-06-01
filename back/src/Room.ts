@@ -136,9 +136,37 @@ export class Room {
 
   async initialize() {
     await this.exclusive(async () => {
+      // Kept your original static import of Chat for cleanliness
       new Chat()
 
-      const scriptFile = SLUG_TO_SCRIPT[this.slug] ?? 'defaultScript.ts'
+      let scriptFile = SLUG_TO_SCRIPT[this.slug]
+
+      // If no static script, check Supabase for a user-uploaded map
+      if (!scriptFile) {
+        try {
+          const { createClient } = await import('@supabase/supabase-js')
+          const sb = createClient(
+            process.env.NEXT_PUBLIC_SUPABASE_URL!,
+            process.env.SUPABASE_SERVICE_KEY! // use service key on server
+          )
+          const { data: map } = await sb.from('maps').select('map_url').eq('slug', this.slug).single()
+          
+          if (map?.map_url) {
+            console.log(`[Room:${this.slug}] Using user map GLB: ${map.map_url}`)
+            // Dynamically generate a script that loads this GLB
+            const { MapWorld } = await import('./ecs/entity/MapWorld.js')
+            new MapWorld(map.map_url)
+            console.log(`[Room:${this.slug}] User map loaded`)
+            return // Exit early since we successfully loaded the user map
+          }
+        } catch (err) {
+          console.error(`[Room:${this.slug}] Supabase map lookup failed:`, err)
+        }
+      }
+
+      // Fall back to defaultScript if no map was found in DB or local files
+      if (!scriptFile) scriptFile = 'defaultScript.ts'
+
       const scriptPath = resolve(import.meta.dirname, 'scripts', scriptFile)
       try {
         await import(pathToFileURL(scriptPath).href)
