@@ -1,5 +1,6 @@
+'use client'
+import { useState } from 'react'
 import Link from 'next/link'
-import { Card, CardHeader, CardTitle, CardDescription } from './ui/card'
 
 interface GameCardProps {
   title: string
@@ -8,44 +9,61 @@ interface GameCardProps {
   metaDescription: string
 }
 
+// Main card — photo + title only, description shown on tap as overlay
 export default function GameCard({ title, imageUrl, slug, metaDescription }: GameCardProps) {
+  const [tapped, setTapped] = useState(false)
+
   return (
-    <Link href={`/play/${slug}`} className="block">
-      <Card className="overflow-hidden bg-slate-900 border-slate-800 hover:border-slate-600 transition-colors">
-        {/* Image container — fixed aspect ratio so it never shows empty space or cuts off */}
-        <div className="relative w-full aspect-video overflow-hidden">
-          <img
-            src={imageUrl}
-            alt={title}
-            className="absolute inset-0 w-full h-full object-cover"
-          />
+    <div className="relative rounded-xl overflow-hidden bg-slate-900 cursor-pointer select-none"
+      onClick={() => setTapped(t => !t)}>
+      {/* Photo fills perfectly — no empty space, no cropping weirdness */}
+      <div className="relative w-full aspect-video">
+        <img src={imageUrl} alt={title}
+          className="absolute inset-0 w-full h-full object-cover" />
+      </div>
+      {/* Title below photo */}
+      <div className="px-2 py-1.5">
+        <p className="text-white text-xs font-bold line-clamp-1">{title}</p>
+      </div>
+
+      {/* Tap overlay — shows description + play button */}
+      {tapped && (
+        <div className="absolute inset-0 bg-black/80 flex flex-col items-center justify-center gap-3 p-3">
+          <p className="text-white text-xs text-center line-clamp-3">{metaDescription}</p>
+          <Link href={`/play/${slug}`}
+            className="px-5 py-2 bg-amber-400 text-black text-xs font-bold rounded-xl active:scale-95"
+            onClick={e => e.stopPropagation()}>
+            Play Now →
+          </Link>
         </div>
-        <CardHeader className="p-3">
-          <CardTitle className="text-sm font-bold text-white leading-tight line-clamp-1">{title}</CardTitle>
-          <CardDescription className="text-xs text-slate-400 line-clamp-2">{metaDescription}</CardDescription>
-        </CardHeader>
-      </Card>
-    </Link>
+      )}
+    </div>
   )
 }
 
+// Mini — same behavior, used in sidebars
 export function MiniGameCard({ title, imageUrl, slug, metaDescription }: GameCardProps) {
+  const [tapped, setTapped] = useState(false)
   return (
-    <Link href={`/play/${slug}`} className="block">
-      <Card className="overflow-hidden bg-slate-900 border-slate-800 hover:border-slate-600 transition-colors">
-        <div className="relative w-full aspect-video overflow-hidden">
-          <img
-            src={imageUrl}
-            alt={title}
-            className="absolute inset-0 w-full h-full object-cover"
-          />
+    <div className="relative rounded-xl overflow-hidden bg-slate-900 cursor-pointer select-none"
+      onClick={() => setTapped(t => !t)}>
+      <div className="relative w-full aspect-video">
+        <img src={imageUrl} alt={title} className="absolute inset-0 w-full h-full object-cover" />
+      </div>
+      <div className="px-2 py-1">
+        <p className="text-white text-xs font-bold line-clamp-1">{title}</p>
+      </div>
+      {tapped && (
+        <div className="absolute inset-0 bg-black/80 flex flex-col items-center justify-center gap-2 p-2">
+          <p className="text-white text-xs text-center line-clamp-2">{metaDescription}</p>
+          <Link href={`/play/${slug}`}
+            className="px-4 py-1.5 bg-amber-400 text-black text-xs font-bold rounded-xl"
+            onClick={e => e.stopPropagation()}>
+            Play →
+          </Link>
         </div>
-        <CardHeader className="p-2">
-          <CardTitle className="text-xs font-bold text-white line-clamp-1">{title}</CardTitle>
-          <CardDescription className="text-xs text-slate-400 line-clamp-1">{metaDescription}</CardDescription>
-        </CardHeader>
-      </Card>
-    </Link>
+      )}
+    </div>
   )
 }
 
