@@ -10,7 +10,7 @@ import { GameInfo } from '@/types'
 import { AlertCircle, RefreshCw, XCircle, Settings, X } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
-import { supabase } from '../src/supabaseClient' // Verify this matches your project'
+import { supabase } from '../src/supabaseClient'
 
 interface GamePlayerProps extends GameInfo {
   playerName?: string
@@ -26,6 +26,10 @@ export default function GamePlayer({ playerName, ...gameInfo }: GamePlayerProps)
   // Settings Menu states
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
   const [activeMapPlayers, setActiveMapPlayers] = useState<any[]>([])
+
+  // Touch UI Tracking States for Knob Offset Styling
+  const [joystickOffset, setJoystickOffset] = useState({ x: 0, y: 0 })
+  const [isJumping, setIsJumping] = useState(false)
 
   const refContainer = useRef<HTMLDivElement | null>(null)
   const retryCount = useRef(0)
@@ -114,6 +118,87 @@ export default function GamePlayer({ playerName, ...gameInfo }: GamePlayerProps)
     }
   }, [gameInfo.id, gameInfo.slug, playerName])
 
+  // ============================================================================
+  // ADVANCED BOUNDS-CHECKED MOBILE TOUCH HANDLERS
+  // ============================================================================
+  const handleJoystickMove = (e: React.TouchEvent<HTMLDivElement>) => {
+    e.preventDefault() // Block browser zoom and viewport bounce instantly
+    if (!gameInstance) return
+
+    const touch = e.touches[0]
+    if (!touch) return
+
+    const maxDistance = 50 // UI tracking radius bounds
+    const joystickEl = e.currentTarget.getBoundingClientRect()
+    const centerX = joystickEl.left + joystickEl.width / 2
+    const centerY = joystickEl.top + joystickEl.height / 2
+
+    let deltaX = touch.clientX - centerX
+    let deltaY = touch.clientY - centerY
+    const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY)
+
+    if (distance > maxDistance) {
+      deltaX = (deltaX / distance) * maxDistance
+      deltaY = (deltaY / distance) * maxDistance
+    }
+
+    // Visually update the positioning of the inner knob element
+    setJoystickOffset({ x: deltaX, y: deltaY })
+
+    // Normalize values between clean -1 and 1 floats for the networking pipeline
+    const inputX = deltaX / maxDistance
+    const inputY = -(deltaY / maxDistance) // Invert Y vector coordinates for 3D engine space
+
+    // Pass the cleaned input matrix vector coordinates directly to the network socket bridge
+    const gameObj = gameInstance as any
+    if (gameObj.networkManager?.sendInput) {
+      gameObj.networkManager.sendInput({ x: inputX, y: inputY })
+    }
+  }
+
+  const handleJoystickRelease = (e: React.TouchEvent) => {
+    e.preventDefault()
+    setJoystickOffset({ x: 0, y: 0 }) // Snaps knob back to true center deadzone
+
+    // ✅ CRITICAL SAFETY: Direct absolute zero clearing instruction to prevent continuous sliding
+    if (gameInstance) {
+      const gameObj = gameInstance as any
+      if (gameObj.networkManager?.sendInput) {
+        gameObj.networkManager.sendInput({ x: 0, y: 0 })
+      }
+    }
+  }
+
+  const handleJumpPress = (e: React.TouchEvent) => {
+    e.preventDefault()
+    setIsJumping(true)
+
+    if (gameInstance) {
+      const gameObj = gameInstance as any
+      if (gameObj.networkManager?.sendJump) {
+        gameObj.networkManager.sendJump(true)
+      } else if (gameObj.networkManager?.sendInput) {
+        // Fallback option if your engine packages jump flags directly inside the standard layout block
+        gameObj.networkManager.sendInput({ jump: true })
+      }
+    }
+  }
+
+  const handleJumpRelease = (e: React.TouchEvent) => {
+    e.preventDefault()
+    setIsJumping(false)
+
+    // ✅ CRITICAL SAFETY: Instructs engine to clear the impulse trigger immediately, preventing endless bouncing loops
+    if (gameInstance) {
+      const gameObj = gameInstance as any
+      if (gameObj.networkManager?.sendJump) {
+        gameObj.networkManager.sendJump(false)
+      } else if (gameObj.networkManager?.sendInput) {
+        gameObj.networkManager.sendInput({ jump: false })
+      }
+    }
+  }
+
   const handleRetry = () => window.location.reload()
 
   const handleLeaveGame = () => {
@@ -141,8 +226,7 @@ export default function GamePlayer({ playerName, ...gameInfo }: GamePlayerProps)
   }
 
   return (
-   
-<div className="relative w-full h-screen bg-black overflow-hidden overscroll-none touch-none select-none">
+    <div className="relative w-full h-screen bg-black overflow-hidden overscroll-none touch-none select-none">
 
       {isLoading && <LoadingScreen />}
 
@@ -251,6 +335,43 @@ export default function GamePlayer({ playerName, ...gameInfo }: GamePlayerProps)
 
       {/* Render Canvas Engine Viewport */}
       <div ref={refContainer} className="w-full h-full" />
+
+      {/* ============================================================================
+          INLINE MOBILE TOUCH HUD OVERLAYS
+          ============================================================================ */}
+      {gameInstance && !isLoading && !connectionError && (
+        <div className="absolute inset-0 pointer-events-none z-20 flex md:hidden">
+          
+          {/* Touch Joystick Region bounding box */}
+          <div 
+            className="absolute bottom-12 left-12 w-32 h-32 bg-gray-900/40 backdrop-blur-sm border-2 border-white/20 rounded-full pointer-events-auto touch-none select-none flex items-center justify-center"
+            onTouchMove={handleJoystickMove}
+            onTouchEnd={handleJoystickRelease}
+          >
+            {/* Dynamic Inner Thumb Controller Knob */}
+            <div 
+              className="w-14 h-14 bg-white/80 border border-gray-400 shadow-xl rounded-full transition-transform duration-75 ease-out"
+              style={{
+                transform: `translate(${joystickOffset.x}px, ${joystickOffset.y}px)`
+              }}
+            />
+          </div>
+
+          {/* Action Input Module (JUMP Trigger Button) */}
+          <div 
+            className={`absolute bottom-16 right-16 w-24 h-24 rounded-full border-2 pointer-events-auto touch-none select-none flex items-center justify-center text-white font-black text-sm tracking-widest active:scale-95 transform transition-all shadow-2xl ${
+              isJumping 
+                ? 'bg-blue-800 border-blue-400 scale-90 opacity-90' 
+                : 'bg-blue-600/80 border-blue-400/50 backdrop-blur-sm'
+            }`}
+            onTouchStart={handleJumpPress}
+            onTouchEnd={handleJumpRelease}
+          >
+            JUMP
+          </div>
+
+        </div>
+      )}
 
       {/* Attach overlays */}
       {gameInstance && !isLoading && !connectionError && (
