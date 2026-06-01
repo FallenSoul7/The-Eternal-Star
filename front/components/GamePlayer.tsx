@@ -141,7 +141,7 @@ export default function GamePlayer({ playerName, ...gameInfo }: GamePlayerProps)
   }
 
   return (
-    <div className="relative w-full h-screen bg-black overflow-hidden select-none">
+    <div className="relative w-full h-screen bg-black overflow-hidden">
       {isLoading && <LoadingScreen />}
 
       {connectionError && (
