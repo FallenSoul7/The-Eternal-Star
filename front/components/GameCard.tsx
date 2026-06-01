@@ -10,87 +10,52 @@ interface GameCardProps {
 
 export default function GameCard({ title, imageUrl, slug, metaDescription }: GameCardProps) {
   return (
-    <Link
-      href={`/play/${slug}`}
-      className="block group transition-transform duration-100 hover:scale-[1.02] h-full"
-    >
-      <Card className="relative h-full overflow-hidden rounded-2xl bg-gray-900/90 drop-shadow-4 hover:drop-shadow-5  ">
-        {/* Fixed height image container */}
-        <div className={`relative w-full h-64 lg:h-96`}>
+    <Link href={`/play/${slug}`} className="block">
+      <Card className="overflow-hidden bg-slate-900 border-slate-800 hover:border-slate-600 transition-colors">
+        {/* Image container — fixed aspect ratio so it never shows empty space or cuts off */}
+        <div className="relative w-full aspect-video overflow-hidden">
           <img
-            alt={title}
             src={imageUrl}
-            className="h-full w-full object-cover transition-all duration-300 group-hover:scale-105 group-hover:brightness-110"
+            alt={title}
+            className="absolute inset-0 w-full h-full object-cover"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-gray-900/70 via-gray-900/0 to-transparent" />
         </div>
-
-        <CardHeader className="absolute bottom-0 w-full p-4 space-y-2 sm:p-6">
-          <CardTitle className="text-xl font-bold text-white md:text-xl  ">{title}</CardTitle>
-          <CardDescription className="line-clamp-2 text-sm/relaxed text-gray-200/95 leading-relaxed">
-            {metaDescription}
-          </CardDescription>
+        <CardHeader className="p-3">
+          <CardTitle className="text-sm font-bold text-white leading-tight line-clamp-1">{title}</CardTitle>
+          <CardDescription className="text-xs text-slate-400 line-clamp-2">{metaDescription}</CardDescription>
         </CardHeader>
       </Card>
     </Link>
   )
 }
 
-/**
- * A compact version of the GameCard component for use in sidebars, related games sections,
- * or any other UI element where space is limited.
- */
 export function MiniGameCard({ title, imageUrl, slug, metaDescription }: GameCardProps) {
   return (
-    <Link
-      href={`/play/${slug}`}
-      className="block group transition-transform duration-100 hover:scale-[1.02] h-full"
-    >
-      <Card className="relative h-full overflow-hidden rounded-xl bg-gray-900/90 drop-shadow-3 hover:drop-shadow-4">
-        {/* Smaller fixed height image container */}
-        <div className={`relative w-full h-40 lg:h-64`}>
+    <Link href={`/play/${slug}`} className="block">
+      <Card className="overflow-hidden bg-slate-900 border-slate-800 hover:border-slate-600 transition-colors">
+        <div className="relative w-full aspect-video overflow-hidden">
           <img
-            alt={title}
             src={imageUrl}
-            className="h-full w-full object-cover transition-all duration-300 group-hover:scale-105 group-hover:brightness-110"
+            alt={title}
+            className="absolute inset-0 w-full h-full object-cover"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-gray-900/40 via-gray-900/0 to-transparent" />
         </div>
-
-        <CardHeader className="absolute bottom-0 w-full p-3 space-y-1">
-          <CardTitle className="text-base text-white md:text-xl  ">{title}</CardTitle>
-          <CardDescription className="line-clamp-1 text-xs/relaxed text-gray-200/95">
-            {metaDescription}
-          </CardDescription>
+        <CardHeader className="p-2">
+          <CardTitle className="text-xs font-bold text-white line-clamp-1">{title}</CardTitle>
+          <CardDescription className="text-xs text-slate-400 line-clamp-1">{metaDescription}</CardDescription>
         </CardHeader>
       </Card>
     </Link>
   )
 }
 
-/**
- * A micro version of the GameCard component for use in compact UI elements
- * where minimal space is available.
- */
 export function MicroGameCard({ title, imageUrl, slug }: Omit<GameCardProps, 'metaDescription'>) {
   return (
-    <Link
-      href={`/play/${slug}`}
-      className="block group transition-transform duration-200 hover:scale-[1.03]"
-    >
-      <Card className="relative overflow-hidden rounded-md bg-gray-900 drop-shadow-md hover:drop-shadow-lg border-0">
-        <div className="relative w-full h-12 aspect-square">
-          <img
-            alt={title}
-            src={imageUrl}
-            className="h-full w-full object-cover brightness-100 group-hover:brightness-110 transition-all duration-300"
-          />
-          <div className="absolute inset-0 bg-black/30" />
-          <CardTitle className="absolute bottom-1 left-1 text-xs/relaxed text-white truncate w-5/6">
-            {title}
-          </CardTitle>
-        </div>
-      </Card>
+    <Link href={`/play/${slug}`} className="block">
+      <div className="relative w-full aspect-video overflow-hidden rounded-lg">
+        <img src={imageUrl} alt={title} className="absolute inset-0 w-full h-full object-cover" />
+      </div>
+      <p className="text-xs font-semibold text-white mt-1 line-clamp-1">{title}</p>
     </Link>
   )
 }
