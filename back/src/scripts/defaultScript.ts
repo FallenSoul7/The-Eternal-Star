@@ -23,24 +23,24 @@ function randomHexColor() {
   return '#' + '0'.repeat(6 - hex.length) + hex
 }
 
-// 1. Check map type
+// 1. Identify if this is a custom map room
 const isCustomMap = !!process.env.CURRENT_MAP_URL;
 
 // 2. Load the map mesh geometry
 const mapUrl = process.env.CURRENT_MAP_URL || 'https://qynwojpluhxhvwiqmstz.supabase.co/storage/v1/object/public/game-assets/Untitled%20folder/Village%20obbesy.glb'
 new MapWorld(mapUrl)
 
-// 3. If it's a custom user map, spawn a solid base plate so they never fall into the void
+// 3. If it is an empty custom map, spawn a solid floor plate so players can stand, walk, and jump
 if (isCustomMap) {
   new Cube({
     position: { x: 0, y: 0, z: 0 },
-    size: { width: 500, height: 1, depth: 500 },
-    color: '#1e293b' // Clean dark slate floor grid
+    size: { width: 600, height: 2, depth: 600 }
   })
 }
 
-// 4. Spawn default sandbox toys ONLY if it's the standard village map
+// 4. Sandbox entities - Spawn ONLY on the original default Village map
 if (!isCustomMap) {
+
   // Create a basic cube
   const basicCubeParams = {
     position: { x: 0, y: 5, z: -50 },
@@ -143,7 +143,7 @@ if (!isCustomMap) {
     car.entity.addComponent(new SpawnPositionComponent(car.entity.id, x, y, z))
   }
 
-  // Football
+  // Football Ball
   const ballSpawnPosition = { x: 0, y: 20, z: -10 }
   const ball = new Sphere({
     radius: 1.4,
@@ -167,12 +167,4 @@ if (!isCustomMap) {
     interactionCooldown: 2000,
     holdDuration: 0,
   }))
-}
-
-// 5. FIXED: This loop now ALWAYS runs so the engine tick handles inputs correctly!
-ScriptableSystem.update = (dt, entities) => {
-  // If it's a custom map, we don't need to check football score status, just let the room tick over smoothly
-  if (isCustomMap) return;
-
-  // Standard sandbox engine updates continue below here...
 }
