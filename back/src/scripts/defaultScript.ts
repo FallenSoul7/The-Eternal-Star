@@ -23,20 +23,24 @@ function randomHexColor() {
   return '#' + '0'.repeat(6 - hex.length) + hex
 }
 
-// 1. Check if the server passed a custom user map URL
+// 1. Check map type
 const isCustomMap = !!process.env.CURRENT_MAP_URL;
 
-// 2. Load the map (Custom if it exists, otherwise Default Village)
+// 2. Load the map mesh geometry
 const mapUrl = process.env.CURRENT_MAP_URL || 'https://qynwojpluhxhvwiqmstz.supabase.co/storage/v1/object/public/game-assets/Untitled%20folder/Village%20obbesy.glb'
 new MapWorld(mapUrl)
 
+// 3. If it's a custom user map, spawn a solid base plate so they never fall into the void
+if (isCustomMap) {
+  new Cube({
+    position: { x: 0, y: 0, z: 0 },
+    size: { width: 500, height: 1, depth: 500 },
+    color: '#1e293b' // Clean dark slate floor grid
+  })
+}
 
-// ============================================================================
-// 3. ONLY SPAWN EXTRAS IF THIS IS THE DEFAULT MAP
-// If a user uploaded a custom map, this entire block is ignored automatically!
-// ============================================================================
+// 4. Spawn default sandbox toys ONLY if it's the standard village map
 if (!isCustomMap) {
-
   // Create a basic cube
   const basicCubeParams = {
     position: { x: 0, y: 5, z: -50 },
@@ -83,7 +87,7 @@ if (!isCustomMap) {
     )
   }
 
-  // Zombie (Fixed URL to prevent crashing if default map loads)
+  // Zombie
   const zombie = new Mesh({
     position: { x: -100, y: 10, z: 100 },
     meshUrl: 'https://notbloxo.fra1.cdn.digitaloceanspaces.com/Notblox-Assets/character/Character.glb',
@@ -144,7 +148,7 @@ if (!isCustomMap) {
   const ball = new Sphere({
     radius: 1.4,
     position: { x: ballSpawnPosition.x, y: ballSpawnPosition.y, z: ballSpawnPosition.z },
-    meshUrl: 'https://qynwojpluhxhvwiqmstz.supabase.co/storage/v1/object/public/game-assets/Cat.glb', // Fixed fallback URL
+    meshUrl: 'https://qynwojpluhxhvwiqmstz.supabase.co/storage/v1/object/public/game-assets/Cat.glb',
     physicsProperties: { mass: 1, enableCcd: true, angularDamping: 0.5, linearDamping: 0.5 },
     colliderProperties: { friction: 0.4, restitution: 0.8 },
   })
@@ -163,5 +167,12 @@ if (!isCustomMap) {
     interactionCooldown: 2000,
     holdDuration: 0,
   }))
+}
 
-} // <-- End of the "If Not Custom Map" block
+// 5. FIXED: This loop now ALWAYS runs so the engine tick handles inputs correctly!
+ScriptableSystem.update = (dt, entities) => {
+  // If it's a custom map, we don't need to check football score status, just let the room tick over smoothly
+  if (isCustomMap) return;
+
+  // Standard sandbox engine updates continue below here...
+}
