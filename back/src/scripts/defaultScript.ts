@@ -23,8 +23,11 @@ function randomHexColor() {
   return '#' + '0'.repeat(6 - hex.length) + hex
 }
 
-// ✅ FIXED: Loaded your working FlatMap so the default world has a floor
-new MapWorld('https://qynwojpluhxhvwiqmstz.supabase.co/storage/v1/object/public/game-assets/Untitled%20folder/Village%20obbesy.glb')
+// ✅ FIXED: Dynamically load user-created maps! 
+// If your server passes process.env.CURRENT_MAP_URL, it loads their custom map. 
+// Otherwise, it falls back to the default Village map.
+const mapUrl = process.env.CURRENT_MAP_URL || 'https://qynwojpluhxhvwiqmstz.supabase.co/storage/v1/object/public/game-assets/Untitled%20folder/Village%20obbesy.glb'
+new MapWorld(mapUrl)
 
 
 // === Basic Entity Creation Examples ===
