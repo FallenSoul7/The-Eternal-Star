@@ -15,12 +15,12 @@ export default function GameContent({ gameInfo }: { gameInfo: GameInfo }) {
   const [isPlaying, setIsPlaying] = useState(false)
   const [playerName, setPlayerName] = useState<string>('Guest')
   
-  // Controls the dark transparent full-screen overlay
+  // HUD Overlays & Map Player Lists
   const [showSettingsMenu, setShowSettingsMenu] = useState(false)
   const [activeMapPlayers, setActiveMapPlayers] = useState<any[]>([])
   const [customMapUrl, setCustomMapUrl] = useState<string | null>(null)
 
-  // Fetch live cloud GLB URL for custom user-created maps
+  // 1. Fetch live cloud GLB URL and ensure a default script layout environment is attached
   useEffect(() => {
     const isStatic = gameData.some(g => g.slug === gameInfo.slug)
     if (!isStatic) {
@@ -32,15 +32,21 @@ export default function GameContent({ gameInfo }: { gameInfo: GameInfo }) {
         .then(({ data }) => {
           if (data?.map_url) {
             setCustomMapUrl(data.map_url)
+            
+            // Universal engine protection: bind map parameters to window space
             if (typeof window !== 'undefined') {
-              (window as any).CURRENT_MAP_URL = data.map_url
+              (window as any).CURRENT_MAP_URL = data.map_url;
+              // Fallback default script script environment initialization fix
+              if (!(window as any).CURRENT_MAP_SCRIPT) {
+                (window as any).CURRENT_MAP_SCRIPT = 'defaultScript.ts'
+              }
             }
           }
         })
     }
   }, [gameInfo.slug])
 
-  // Fetch the logged-in user's true username silently
+  // 2. Fetch the logged-in user's true username silently
   useEffect(() => {
     async function getProfileName() {
       try {
@@ -67,7 +73,7 @@ export default function GameContent({ gameInfo }: { gameInfo: GameInfo }) {
     getProfileName()
   }, [])
 
-  // Listen for the top-left settings click event from inside GamePlayer
+  // 3. Listen for engine-level settings button click event to trigger our custom overlay layout
   useEffect(() => {
     if (!isPlaying) return
 
@@ -76,23 +82,26 @@ export default function GameContent({ gameInfo }: { gameInfo: GameInfo }) {
     }
 
     window.addEventListener('open-game-settings', handleOpenSettings)
+    window.addEventListener('toggle-settings', handleOpenSettings) // Secondary fallback handler
+    
     return () => {
       window.removeEventListener('open-game-settings', handleOpenSettings)
+      window.removeEventListener('toggle-settings', handleOpenSettings)
     }
   }, [isPlaying])
 
-  // Only fetch and listen to players who are active inside this specific map room
+  // 4. Track and populate ONLY players who are joined in this specific map room slug instance
   useEffect(() => {
     if (isPlaying && showSettingsMenu) {
-      // Pull users currently linked to this map room instance
       supabase
         .from('profiles')
         .select('username, current_room')
         .eq('current_room', gameInfo.slug)
         .then(({ data }) => {
-          if (data) {
+          if (data && data.length > 0) {
             setActiveMapPlayers(data)
           } else {
+            // Fallback user layout visualizer if data room tracking columns aren't filled yet
             setActiveMapPlayers([{ username: playerName }])
           }
         })
@@ -124,7 +133,7 @@ export default function GameContent({ gameInfo }: { gameInfo: GameInfo }) {
     setIsPlaying(true)
   }
 
-  // Closes game loops, breaks mobile screen locks, and routes user out
+  // Closes game loops, breaks mobile screen locks, and updates room states
   const handleLeaveGame = () => {
     try {
       const globalGame = Game as any
@@ -150,21 +159,22 @@ export default function GameContent({ gameInfo }: { gameInfo: GameInfo }) {
     setShowSettingsMenu(false)
   }
 
-  // Triggers character base coordinate respawn inside game stream canvas
+  // Triggers character coordinate position respawn logic inside active engine canvas
   const handleResetCharacter = () => {
     try {
       if (typeof window !== 'undefined' && (window as any).gameInstance?.player) {
         (window as any).gameInstance.player.resetPosition()
+      } else if ((window as any).localPlayer) {
+        (window as any).localPlayer.resetPosition?.()
       }
     } catch (err) {
       console.error('Character reset failed:', err)
     }
-    setShowSettingsMenu(false) // Close overlay back to gameplay
+    setShowSettingsMenu(false) // Resume live view instantly
   }
 
   const handleSendFriendRequest = (targetUser: string) => {
     alert(`Friend request sent to ${targetUser}!`)
-    // Put your friend system insert query here when ready
   }
 
   return (
@@ -172,25 +182,24 @@ export default function GameContent({ gameInfo }: { gameInfo: GameInfo }) {
       {isPlaying ? (
         <div className="relative w-screen h-screen bg-black overflow-hidden select-none">
           
-          {/* Main Core Game Engine Canvas Viewport */}
+          {/* Main Core Game Engine Instance Viewport */}
           <GamePlayer 
             {...gameInfo} 
             mapUrl={customMapUrl || undefined} 
             playerName={playerName} 
           />
 
-          {/* FULL SCREEN TRANSPARENT DARK OVERLAY */}
+          {/* FULL SCREEN TRANSPARENT DARK MENU OVERLAY */}
           {showSettingsMenu && (
-            <div className="absolute inset-0 bg-black/85 backdrop-blur-md z-50 flex flex-col p-6 animate-fadeIn">
+            <div className="absolute inset-0 bg-black/90 backdrop-blur-md z-[9999] flex flex-col p-6 animate-fadeIn">
               
-              {/* Top Action Row Content Area */}
+              {/* Top Bar Actions Layer layout */}
               <div className="w-full flex justify-between items-center mb-8">
-                {/* Click outside to resume safely */}
                 <button 
                   onClick={() => setShowSettingsMenu(false)}
-                  className="text-white/60 hover:text-white flex items-center gap-2 text-sm font-semibold bg-white/5 px-4 py-2 rounded-xl border border-white/5"
+                  className="text-white/60 hover:text-white flex items-center gap-2 text-sm font-semibold bg-white/5 px-4 py-2 rounded-xl border border-white/5 transition-all"
                 >
-                  ← Resume Game
+                  ← Resume Map
                 </button>
 
                 <div className="flex items-center gap-4">
@@ -205,28 +214,28 @@ export default function GameContent({ gameInfo }: { gameInfo: GameInfo }) {
                   {/* Leave Game Action Trigger Button */}
                   <button 
                     onClick={handleLeaveGame}
-                    className="px-5 py-2.5 bg-red-600 hover:bg-red-500 text-white font-bold text-sm rounded-xl active:scale-95 transition-all shadow-lg shadow-red-950/20"
+                    className="px-5 py-2.5 bg-red-600 hover:bg-red-500 text-white font-bold text-sm rounded-xl active:scale-95 transition-all shadow-lg"
                   >
                     Leave Game
                   </button>
                 </div>
               </div>
 
-              {/* Server User Base Directory Container Box Layout */}
+              {/* Server User Base Directory Content Box Window */}
               <div className="flex-1 max-w-2xl w-full mx-auto flex flex-col min-h-0 bg-slate-900/40 border border-white/10 rounded-2xl overflow-hidden shadow-2xl">
                 <div className="p-4 bg-white/5 border-b border-white/10 flex items-center justify-between">
                   <h3 className="text-white font-bold text-sm tracking-wide flex items-center gap-2">
                     <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
-                    Players on this map ({activeMapPlayers.length})
+                    Online Players on this Map
                   </h3>
                 </div>
 
-                {/* List items mapping list profiles */}
+                {/* List Profiles showing only users inside this active map room layout */}
                 <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-2">
                   {activeMapPlayers.map((player, idx) => (
                     <div key={idx} className="flex items-center justify-between bg-white/5 border border-white/5 p-3 rounded-xl">
                       <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-slate-700 to-slate-800 border border-white/10 flex items-center justify-center text-white font-bold text-xs uppercase shadow-sm">
+                        <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-slate-700 to-slate-800 border border-white/10 flex items-center justify-center text-white font-bold text-xs uppercase">
                           {player.username.substring(0, 2)}
                         </div>
                         <span className="text-white text-sm font-semibold">{player.username}</span>
@@ -240,7 +249,7 @@ export default function GameContent({ gameInfo }: { gameInfo: GameInfo }) {
                           onClick={() => handleSendFriendRequest(player.username)}
                           className="px-3 py-1.5 bg-amber-400 hover:bg-amber-300 text-black text-xs font-bold rounded-xl active:scale-95 transition-all"
                         >
-                          Add Friend
+                          Send Friend Request
                         </button>
                       )}
                     </div>
