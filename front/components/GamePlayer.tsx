@@ -10,7 +10,7 @@ import { GameInfo } from '@/types'
 import { AlertCircle, RefreshCw, XCircle, Settings, X } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
-import { supabase } from '../supabaseClient' // Adjust path to your supabaseClient if needed
+import { supabase } from '../src/supabaseClient' // Verify this matches your project'
 
 interface GamePlayerProps extends GameInfo {
   playerName?: string
@@ -23,7 +23,7 @@ export default function GamePlayer({ playerName, ...gameInfo }: GamePlayerProps)
   const [messages, setMessages] = useState<MessageComponent[]>([])
   const [gameInstance, setGameInstance] = useState<Game | null>(null)
   
-  // Settings Overlay State
+  // Settings Menu states
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
   const [activeMapPlayers, setActiveMapPlayers] = useState<any[]>([])
 
@@ -40,7 +40,7 @@ export default function GamePlayer({ playerName, ...gameInfo }: GamePlayerProps)
     if (doc.exitFullscreen) doc.exitFullscreen().catch(() => {})
   }
 
-  // Fetch only players active in this specific map when settings menu opens
+  // Live lookup for online map members
   useEffect(() => {
     if (isSettingsOpen && gameInfo.slug) {
       supabase
@@ -51,9 +51,12 @@ export default function GamePlayer({ playerName, ...gameInfo }: GamePlayerProps)
           if (data && data.length > 0) {
             setActiveMapPlayers(data)
           } else {
-            // Fallback so it at least shows you if the database lookup is slow
             setActiveMapPlayers([{ username: playerName || 'Guest' }])
           }
+        })
+        .catch((err) => {
+          console.error('Failed to look up room players:', err)
+          setActiveMapPlayers([{ username: playerName || 'Guest' }])
         })
     }
   }, [isSettingsOpen, gameInfo.slug, playerName])
@@ -81,7 +84,6 @@ export default function GamePlayer({ playerName, ...gameInfo }: GamePlayerProps)
 
         await game.start()
 
-        // Wait one tick for FIRST_CONNECTION to be processed before sending name
         setTimeout(() => {
           const finalName = playerName?.trim() || 'Guest'
           game.setPlayerName(finalName)
@@ -129,14 +131,13 @@ export default function GamePlayer({ playerName, ...gameInfo }: GamePlayerProps)
       const gameObj = gameInstance as any
       if (typeof gameObj.resetPlayer === 'function') gameObj.resetPlayer()
     } catch (err) {
-      console.error('Failed to reset player:', err)
+      console.error('Failed to reset player position:', err)
     }
-    setIsSettingsOpen(false) // Close the menu instantly upon resetting
+    setIsSettingsOpen(false)
   }
 
   const handleSendFriendRequest = (targetUser: string) => {
     alert(`Friend request sent to ${targetUser}!`)
-    // Put your Supabase friend request insert query here later
   }
 
   return (
@@ -161,7 +162,7 @@ export default function GamePlayer({ playerName, ...gameInfo }: GamePlayerProps)
         </div>
       )}
 
-      {/* EXISTING TOP-LEFT SETTINGS BUTTON */}
+      {/* Top Left Gears/Settings icon button */}
       {gameInstance && !isLoading && !connectionError && !isSettingsOpen && (
         <button 
           onClick={() => setIsSettingsOpen(true)} 
@@ -171,11 +172,11 @@ export default function GamePlayer({ playerName, ...gameInfo }: GamePlayerProps)
         </button>
       )}
 
-      {/* NEW FULL-SCREEN DARK TRANSPARENT OVERLAY */}
+      {/* Full-screen overlay configuration */}
       {isSettingsOpen && (
         <div className="absolute inset-0 z-[9999] bg-black/90 backdrop-blur-md flex flex-col p-6 animate-in fade-in">
           
-          {/* Top Row: Close X (Left) and Actions (Right) */}
+          {/* Top Actions layout layout */}
           <div className="flex justify-between items-start w-full mb-8">
             <button 
               onClick={() => setIsSettingsOpen(false)} 
@@ -202,10 +203,59 @@ export default function GamePlayer({ playerName, ...gameInfo }: GamePlayerProps)
             </div>
           </div>
 
-          {/* Map Players Directory Window */}
+          {/* Directory Box layout layout */}
           <div className="w-full max-w-3xl mx-auto mt-4 bg-slate-900/60 border border-slate-700 rounded-2xl flex flex-col min-h-[400px] shadow-2xl">
-            
             <div className="p-5 border-b border-slate-700 bg-slate-800/50 flex items-center justify-between">
               <h2 className="text-white font-bold text-lg flex items-center gap-3">
                 <span className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></span>
-                Players on
+                Players on this Map
+              </h2>
+            </div>
+            
+            <div className="flex-1 p-5 overflow-y-auto flex flex-col gap-3">
+               {activeMapPlayers.length > 0 ? (
+                 activeMapPlayers.map((player, idx) => (
+                   <div key={idx} className="flex items-center justify-between bg-slate-800/80 border border-slate-700 p-4 rounded-xl">
+                     <div className="flex items-center gap-4">
+                        <div className="w-10 h-10 rounded-lg bg-slate-700 flex items-center justify-center text-white font-bold uppercase">
+                          {player.username ? player.username.substring(0, 2) : '??'}
+                        </div>
+                        <div>
+                          <span className="text-white font-bold text-base">{player.username || 'Unknown'}</span>
+                          {player.username === playerName && (
+                            <span className="ml-2 text-xs bg-blue-500/20 text-blue-400 border border-blue-500/30 px-2 py-0.5 rounded">You</span>
+                          )}
+                        </div>
+                     </div>
+                     
+                     {player.username !== playerName && (
+                       <Button 
+                         onClick={() => handleSendFriendRequest(player.username)} 
+                         className="bg-amber-400 hover:bg-amber-500 text-black font-bold h-auto py-2.5 px-4 rounded-xl"
+                       >
+                         Send Friend Request
+                       </Button>
+                     )}
+                   </div>
+                 ))
+               ) : (
+                 <div className="text-center text-slate-500 py-10 font-medium">Loading players...</div>
+               )}
+            </div>
+          </div>
+
+        </div>
+      )}
+
+      {/* Render Canvas Engine Viewport */}
+      <div ref={refContainer} className="w-full h-full" />
+
+      {/* Attach overlays */}
+      {gameInstance && !isLoading && !connectionError && (
+        <div id="hud">
+          <GameHud messages={messages} gameInstance={gameInstance} />
+        </div>
+      )}
+    </div>
+  )
+}
