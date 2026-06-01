@@ -1,18 +1,19 @@
 'use client'
-import { useEffect, useState, useRef, useCallback } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { supabase } from '../supabaseClient'
 import { AuthGateway } from '../components/AuthGateway'
 import GameCard from '../../components/GameCard'
-// Note: I removed the <Navbar /> import from renderHome since we are using your custom top bar instead.
 import type { Session } from '@supabase/supabase-js'
 import gameData from '../../public/gameData.json'
 import {
   Home as HomeIcon, User, Settings as SettingsIcon,
   Sun, MonitorPlay, Cog, Plus, Search, X, Check,
-  UserMinus, ArrowLeft, Upload, Code2, ChevronLeft, ChevronRight
+  UserMinus, ArrowLeft, Upload, Code2
 } from 'lucide-react'
 import Link from 'next/link'
-import * as THREE from 'three'
+
+// 👉 PASTE YOUR DIGITAL OCEAN AVATAR URL HERE
+const MY_2D_AVATAR = "YOUR_DIGITAL_OCEAN_URL_HERE"
 
 export interface GameInfo {
   title: string
@@ -24,74 +25,23 @@ export interface GameInfo {
   images: { url: string; width: number; height: number; alt: string; type: string }[]
 }
 
-// ── Real in-game character (exact geometry used in-game) ──────────────────────
-function buildRealCharacter(scene: THREE.Scene): THREE.Group {
-  const group = new THREE.Group()
-  const skin = new THREE.MeshStandardMaterial({ color: 0xffd6a5 })
-  const body = new THREE.MeshStandardMaterial({ color: 0x4a90d9 })
-  const leg  = new THREE.MeshStandardMaterial({ color: 0x2c3e50 })
-
-  const head  = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.8, 0.8), skin)
-  head.position.y = 1.65
-  const torso = new THREE.Mesh(new THREE.BoxGeometry(1.0, 1.1, 0.5), body)
-  torso.position.y = 0.75
-  const lArm  = new THREE.Mesh(new THREE.BoxGeometry(0.38, 1.0, 0.38), body)
-  lArm.position.set(-0.69, 0.75, 0)
-  const rArm  = new THREE.Mesh(new THREE.BoxGeometry(0.38, 1.0, 0.38), body)
-  rArm.position.set(0.69, 0.75, 0)
-  const lLeg  = new THREE.Mesh(new THREE.BoxGeometry(0.42, 1.05, 0.42), leg)
-  lLeg.position.set(-0.28, -0.32, 0)
-  const rLeg  = new THREE.Mesh(new THREE.BoxGeometry(0.42, 1.05, 0.42), leg)
-  rLeg.position.set(0.28, -0.32, 0)
-
-  group.add(head, torso, lArm, rArm, lLeg, rLeg)
-  group.position.y = 0.52
-  scene.add(group)
-  return group
-}
-
-const AVATARS = [{ id: 'default', name: 'Default', build: buildRealCharacter }]
-
-// ── 3D Avatar Viewer ──────────────────────────────────────────────────────────
-function AvatarViewer({ index, size = 'large' }: { index: number; size?: 'large' | 'small' }) {
-  const mountRef = useRef<HTMLDivElement>(null)
-  useEffect(() => {
-    const el = mountRef.current
-    if (!el) return
-    const W = el.clientWidth || 200
-    const H = el.clientHeight || 200
-    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true })
-    renderer.setSize(W, H)
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
-    renderer.shadowMap.enabled = true
-    el.appendChild(renderer.domElement)
-    const scene = new THREE.Scene()
-    const camera = new THREE.PerspectiveCamera(40, W / H, 0.1, 100)
-    if (size === 'small') { camera.position.set(0, 1.9, 2.8); camera.lookAt(0, 1.7, 0) }
-    else { camera.position.set(0, 1.1, 4.5); camera.lookAt(0, 1.0, 0) }
-    scene.add(new THREE.AmbientLight(0xffffff, 0.7))
-    const dir = new THREE.DirectionalLight(0xffffff, 1.2)
-    dir.position.set(3, 6, 4); dir.castShadow = true; scene.add(dir)
-    if (size === 'large') {
-      const plat = new THREE.Mesh(new THREE.CylinderGeometry(1.5, 1.5, 0.07, 48),
-        new THREE.MeshStandardMaterial({ color: 0x1a1a2e }))
-      plat.position.y = -0.01; plat.receiveShadow = true; scene.add(plat)
-    }
-    const group = (AVATARS[index] ?? AVATARS[0]).build(scene)
-    let angle = 0, animId: number
-    const animate = () => { animId = requestAnimationFrame(animate); angle += 0.012; group.rotation.y = angle; renderer.render(scene, camera) }
-    animate()
-    return () => { cancelAnimationFrame(animId); renderer.dispose(); if (el.contains(renderer.domElement)) el.removeChild(renderer.domElement) }
-  }, [index, size])
-  return <div ref={mountRef} className="w-full h-full" />
+// ── 2D Avatar Component ───────────────────────────────────────────────────────
+function Avatar2D({ src, alt = "Avatar" }: { src?: string; alt?: string }) {
+  return (
+    <img 
+      src={src || MY_2D_AVATAR} 
+      alt={alt} 
+      className="w-full h-full object-cover"
+    />
+  )
 }
 
 // ── Friend circle component ───────────────────────────────────────────────────
-function FriendCircle({ username }: { username: string }) {
+function FriendCircle({ username, avatarSrc }: { username: string, avatarSrc?: string }) {
   return (
     <div className="flex flex-col items-center gap-1 shrink-0">
       <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-amber-400 bg-[#12122a]">
-        <AvatarViewer index={0} size="small" />
+        <Avatar2D src={avatarSrc} alt={username} />
       </div>
       <span className="text-white text-xs font-semibold max-w-[64px] truncate">{username}</span>
     </div>
@@ -307,7 +257,9 @@ function FriendsPanel({ session, onBack }: { session: Session; onBack: () => voi
           <div className="flex flex-col gap-2 mt-3">
             {searchResults.map(u => (
               <div key={u.id} className="flex items-center gap-3 bg-white/5 rounded-xl p-3">
-                <div className="w-10 h-10 rounded-full overflow-hidden bg-[#12122a] border border-amber-400"><AvatarViewer index={0} size="small" /></div>
+                <div className="w-10 h-10 rounded-full overflow-hidden bg-[#12122a] border border-amber-400">
+                  <Avatar2D src={u.avatar_id} alt={u.username} />
+                </div>
                 <span className="flex-1 font-semibold">{u.username}</span>
                 <button onClick={() => sendRequest(u.id)} className="p-2 bg-amber-400 rounded-full text-black"><Plus className="w-4 h-4" /></button>
               </div>
@@ -320,7 +272,9 @@ function FriendsPanel({ session, onBack }: { session: Session; onBack: () => voi
           <p className="text-slate-400 text-xs uppercase tracking-widest mb-3">Requests ({pendingIn.length})</p>
           {pendingIn.map(u => (
             <div key={u.id} className="flex items-center gap-3 bg-white/5 rounded-xl p-3 mb-2">
-              <div className="w-10 h-10 rounded-full overflow-hidden bg-[#12122a] border border-amber-400"><AvatarViewer index={0} size="small" /></div>
+              <div className="w-10 h-10 rounded-full overflow-hidden bg-[#12122a] border border-amber-400">
+                <Avatar2D src={u.avatar_id} alt={u.username} />
+              </div>
               <span className="flex-1 font-semibold">{u.username}</span>
               <button onClick={() => acceptRequest(u.requestId)} className="p-2 bg-green-500 rounded-full text-white mr-1"><Check className="w-4 h-4" /></button>
               <button onClick={() => rejectRequest(u.requestId)} className="p-2 bg-red-500 rounded-full text-white"><X className="w-4 h-4" /></button>
@@ -333,7 +287,9 @@ function FriendsPanel({ session, onBack }: { session: Session; onBack: () => voi
         {friends.length === 0 && <p className="text-slate-600 text-sm">No friends yet.</p>}
         {friends.map(f => (
           <div key={f.id} className="flex items-center gap-3 bg-white/5 rounded-xl p-3 mb-2">
-            <div className="w-10 h-10 rounded-full overflow-hidden bg-[#12122a] border border-amber-400"><AvatarViewer index={0} size="small" /></div>
+            <div className="w-10 h-10 rounded-full overflow-hidden bg-[#12122a] border border-amber-400">
+              <Avatar2D src={f?.avatar_id} alt={f?.username} />
+            </div>
             <span className="flex-1 font-semibold">{f?.username ?? '?'}</span>
             <button onClick={() => removeFriend(f.id)} className="p-2 bg-white/10 rounded-full text-red-400"><UserMinus className="w-4 h-4" /></button>
           </div>
@@ -348,12 +304,9 @@ export default function Home() {
   const [session, setSession] = useState<Session | null>(null)
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState('home')
-  const [avatarIndex, setAvatarIndex] = useState(0)
   const [friends, setFriends] = useState<any[]>([])
   const [userMaps, setUserMaps] = useState<any[]>([])
   const [page, setPage] = useState<'main' | 'friends' | 'upload' | 'devtools'>('main')
-  
-  // RESTORED: Map Search State
   const [mapSearchQuery, setMapSearchQuery] = useState('')
 
   useEffect(() => {
@@ -365,7 +318,7 @@ export default function Home() {
   useEffect(() => {
     if (!session) return
     const uid = session.user.id
-    // Load friends
+    
     supabase.from('friend_requests')
       .select('*, from:from_id(id,username,avatar_id), to:to_id(id,username,avatar_id)')
       .or(`from_id.eq.${uid},to_id.eq.${uid}`)
@@ -373,7 +326,7 @@ export default function Home() {
         if (!data) return
         setFriends(data.filter(r => r.status === 'accepted').map(r => r.from_id === uid ? r.to : r.from))
       })
-    // Load user-uploaded maps
+      
     supabase.from('maps').select('*').eq('is_published', true).then(({ data }) => {
       setUserMaps(data ?? [])
     })
@@ -392,7 +345,6 @@ export default function Home() {
   const username = email.split('@')[0]
   const uid = session.user.id
 
-  // Merge static games + user-uploaded maps into one list for Discover
   const allGames = [
     ...staticGames,
     ...userMaps.map(m => ({
@@ -407,7 +359,6 @@ export default function Home() {
     }))
   ]
 
-  // RESTORED: Filter Logic
   const filteredGames = allGames.filter(game => 
     game.title.toLowerCase().includes(mapSearchQuery.toLowerCase())
   )
@@ -419,11 +370,10 @@ export default function Home() {
   // ── HOME ──────────────────────────────────────────────────────────────────
   const renderHome = () => (
     <div className="pb-24">
-      {/* RESTORED: Top Header (Profile + Map Search) */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-slate-800 gap-4">
         <div className="flex items-center gap-3 shrink-0">
           <div className="w-10 h-10 rounded-full overflow-hidden border-2 border-amber-400 bg-[#12122a]">
-            <AvatarViewer index={avatarIndex} size="small" />
+            <Avatar2D alt={username} />
           </div>
           <span className="text-white font-bold text-sm tracking-tight truncate max-w-[100px]">{username}</span>
         </div>
@@ -439,11 +389,10 @@ export default function Home() {
         </div>
       </div>
 
-      {/* RESTORED: Correct Friend Circle Order (You -> Add -> Friends) */}
       <div className="px-4 mt-4 flex items-center gap-3 overflow-x-auto no-scrollbar pb-2">
         <div className="flex flex-col items-center gap-1 shrink-0">
           <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-amber-400 bg-[#12122a]">
-            <AvatarViewer index={avatarIndex} size="small" />
+            <Avatar2D alt={username} />
           </div>
           <span className="text-white text-xs font-semibold max-w-[64px] truncate">{username}</span>
         </div>
@@ -455,10 +404,9 @@ export default function Home() {
           <span className="text-slate-500 text-xs">Add</span>
         </button>
 
-        {friends.map(f => <FriendCircle key={f.id} username={f?.username ?? '?'} />)}
+        {friends.map(f => <FriendCircle key={f.id} username={f?.username ?? '?'} avatarSrc={f?.avatar_id} />)}
       </div>
 
-      {/* RESTORED: Map Grids & Search View */}
       {mapSearchQuery.trim() !== '' ? (
         <div className="px-4 mt-5">
           <h2 className="text-sm font-bold text-slate-400 uppercase tracking-widest mb-2">Search Results</h2>
@@ -476,7 +424,11 @@ export default function Home() {
             <h2 className="text-sm font-bold text-slate-400 uppercase tracking-widest mb-2">Last Played</h2>
             <div className="flex overflow-x-auto gap-3 pb-2 no-scrollbar">
               {allGames.slice(0, 5).map((game, i) => (
-                <div key={i} className="shrink-0 w-32">
+                {/* 
+                  Increased width by 20% to proportionally increase height.
+                  Changed from w-32 (128px) to w-[154px] (154px)
+                */}
+                <div key={i} className="shrink-0 w-[154px]">
                   <GameCard {...game} />
                 </div>
               ))}
@@ -497,24 +449,14 @@ export default function Home() {
   // ── AVATAR ────────────────────────────────────────────────────────────────
   const renderAvatar = () => (
     <div className="flex flex-col items-center gap-5 pb-24 px-4 pt-4">
-      <div className="w-full rounded-2xl border border-white/10 overflow-hidden bg-[#12122a]" style={{ height: '55vh' }}>
-        <AvatarViewer index={avatarIndex} size="large" />
+      <div className="w-full rounded-2xl border border-white/10 overflow-hidden bg-[#12122a] flex items-center justify-center p-4" style={{ height: '55vh' }}>
+        <img 
+          src={MY_2D_AVATAR} 
+          alt="My Avatar" 
+          className="max-w-full max-h-full object-contain drop-shadow-2xl"
+        />
       </div>
-      <div className="flex items-center justify-between w-full bg-white/5 rounded-2xl px-4 py-3 border border-white/10">
-        <button onClick={() => setAvatarIndex(i => (i - 1 + AVATARS.length) % AVATARS.length)}
-          className="w-10 h-10 bg-white/10 rounded-full flex items-center justify-center text-white active:scale-90">
-          <ChevronLeft className="w-5 h-5" />
-        </button>
-        <div className="text-center">
-          <p className="text-white font-bold">{AVATARS[avatarIndex].name}</p>
-          <p className="text-slate-500 text-xs">{avatarIndex + 1} / {AVATARS.length}</p>
-        </div>
-        <button onClick={() => setAvatarIndex(i => (i + 1) % AVATARS.length)}
-          className="w-10 h-10 bg-white/10 rounded-full flex items-center justify-center text-white active:scale-90">
-          <ChevronRight className="w-5 h-5" />
-        </button>
-      </div>
-      <button className="w-full py-3 bg-amber-400 text-black font-bold rounded-xl active:scale-95">Equip</button>
+      <button className="w-full py-4 bg-amber-400 text-black font-bold rounded-xl active:scale-95">Update Avatar Picture</button>
     </div>
   )
 
