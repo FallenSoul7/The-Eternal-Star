@@ -177,9 +177,19 @@ async function startServer() {
 function handleMessage(msg: ClientMessage, player: Player, room: Room) {
   switch (msg.t) {
     case ClientMessageType.INPUT: {
-      const { u, d, l, r, s, y, i } = msg as InputMessage
-      if (typeof u === 'boolean' && typeof y === 'number')
-        inputProcessingSystem.receiveInputPacket(player.entity, msg as InputMessage)
+      const inputMsg = msg as InputMessage
+      const { u, d, l, r, s, y, i } = inputMsg
+      
+      // FIXED: Accept both boolean AND numeric input (joystick sends numbers)
+      // Validate that we have direction inputs or jump/interact
+      const hasDirectionInput = typeof u === 'boolean' || typeof d === 'boolean' || 
+                               typeof l === 'boolean' || typeof r === 'boolean'
+      const hasActionInput = typeof s === 'boolean' || typeof i === 'boolean'
+      const hasJoystickInput = typeof y === 'number' // Joystick Y value
+      
+      if (hasDirectionInput || hasActionInput || hasJoystickInput) {
+        inputProcessingSystem.receiveInputPacket(player.entity, inputMsg)
+      }
       break
     }
     case ClientMessageType.CHAT_MESSAGE: {
