@@ -4,7 +4,6 @@ import React, { useState, useEffect } from 'react'
 import { Joystick } from 'react-joystick-component'
 import { MessageComponent } from '@shared/component/MessageComponent'
 import { Game } from '@/game/Game'
-import styles from '@/styles/GameHud.module.css'
 
 interface GameHudProps {
   messages: MessageComponent[]
@@ -79,15 +78,15 @@ export default function GameHud({ messages, gameInstance }: GameHudProps) {
   }
 
   return (
-    <div className={styles.gameHud}>
+    <div className="fixed inset-0 pointer-events-none select-none">
       {/* Chat Messages Display */}
-      <div className={styles.chatContainer}>
+      <div className="absolute top-4 left-4 max-w-xs bg-black/50 rounded-lg p-3 max-h-40 overflow-y-auto pointer-events-auto">
         {messages && messages.length > 0 && (
-          <div className={styles.messageList}>
+          <div className="space-y-1">
             {messages.map((msg, idx) => (
-              <div key={idx} className={styles.message}>
-                <span className={styles.sender}>{msg.sender}:</span>
-                <span className={styles.content}>{msg.content}</span>
+              <div key={idx} className="text-xs text-white">
+                <span className="font-bold text-blue-400">{msg.sender}:</span>
+                <span className="ml-1 text-gray-200">{msg.content}</span>
               </div>
             ))}
           </div>
@@ -95,25 +94,28 @@ export default function GameHud({ messages, gameInstance }: GameHudProps) {
       </div>
 
       {/* Chat Input */}
-      <div className={styles.chatInput}>
+      <div className="absolute bottom-4 left-4 max-w-sm bg-black/70 rounded-lg p-2 pointer-events-auto flex gap-2">
         <input
           type="text"
           value={chatText}
           onChange={(e) => setChatText(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && handleSendChat()}
           placeholder="Press T to chat..."
-          className={styles.inputField}
+          className="flex-1 bg-gray-800 text-white text-xs px-2 py-1 rounded border border-gray-700 focus:outline-none focus:border-blue-500"
         />
-        <button onClick={handleSendChat} className={styles.sendButton}>
+        <button
+          onClick={handleSendChat}
+          className="bg-blue-600 hover:bg-blue-700 text-white text-xs px-3 py-1 rounded font-bold transition-colors"
+        >
           Send
         </button>
       </div>
 
       {/* Mobile Controls */}
       {isMobile && (
-        <div className={styles.mobileControls}>
+        <div className="absolute inset-0 pointer-events-none">
           {/* Joystick (Left Side) */}
-          <div className={styles.joystickContainer}>
+          <div className="absolute bottom-6 left-6 pointer-events-auto">
             <Joystick
               size={100}
               baseColor="rgba(255, 255, 255, 0.15)"
@@ -125,29 +127,29 @@ export default function GameHud({ messages, gameInstance }: GameHudProps) {
           </div>
 
           {/* Action Buttons (Right Side) */}
-          <div className={styles.actionButtonsContainer}>
+          <div className="absolute bottom-6 right-6 flex flex-col gap-3 pointer-events-auto">
             {/* Jump Button */}
             <button
-              className={`${styles.actionButton} ${styles.jumpButton}`}
+              className="w-16 h-16 bg-gradient-to-b from-blue-500 to-blue-700 hover:from-blue-400 hover:to-blue-600 active:from-blue-600 active:to-blue-800 text-white font-bold text-xs rounded-lg shadow-lg border-2 border-blue-400 transition-all flex items-center justify-center"
               onTouchStart={handleJumpStart}
               onTouchEnd={handleJumpEnd}
               onMouseDown={handleJumpStart}
               onMouseUp={handleJumpEnd}
               onMouseLeave={handleJumpEnd}
             >
-              <span className={styles.buttonLabel}>JUMP</span>
+              JUMP
             </button>
 
             {/* Interact Button */}
             <button
-              className={`${styles.actionButton} ${styles.interactButton}`}
+              className="w-16 h-16 bg-gradient-to-b from-green-500 to-green-700 hover:from-green-400 hover:to-green-600 active:from-green-600 active:to-green-800 text-white font-bold text-xs rounded-lg shadow-lg border-2 border-green-400 transition-all flex items-center justify-center"
               onTouchStart={handleInteractStart}
               onTouchEnd={handleInteractEnd}
               onMouseDown={handleInteractStart}
               onMouseUp={handleInteractEnd}
               onMouseLeave={handleInteractEnd}
             >
-              <span className={styles.buttonLabel}>INTERACT</span>
+              E
             </button>
           </div>
         </div>
