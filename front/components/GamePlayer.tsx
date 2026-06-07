@@ -26,25 +26,8 @@ export default function GamePlayer({ playerName, ...gameInfo }: GamePlayerProps)
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
   const [activeMapPlayers, setActiveMapPlayers] = useState<any[]>([])
 
-  // Tracking visual coordinates for drawing the knob inside UI boundary
-  const [joystickOffset, setJoystickOffset] = useState({ x: 0, y: 0 })
-  const [isJumping, setIsJumping] = useState(false)
-
-  // Critical State Cache to prevent high-frequency duplicate transmissions
-  const activeInputState = useRef({ u: false, d: false, l: false, r: false, s: false, i: false, y: 0 })
-
   const refContainer = useRef<HTMLDivElement | null>(null)
   const retryCount = useRef(0)
-
-  const purgeGameEngineUI = () => {
-    const targets = ['Car', 'Enter', 'Interact', 'JUMP']
-    document.querySelectorAll('button, div, span, p').forEach((el) => {
-      const text = el.textContent?.trim() || ''
-      if (targets.some(t => text.includes(t)) && !el.closest('#hud')) el.remove()
-    })
-    const doc = document as any
-    if (doc.exitFullscreen) doc.exitFullscreen().catch(() => {})
-  }
 
   useEffect(() => {
     if (isSettingsOpen && gameInfo.slug) {
@@ -127,116 +110,8 @@ export default function GamePlayer({ playerName, ...gameInfo }: GamePlayerProps)
         const gameObj = activeGame as any
         if (typeof gameObj.disconnect === 'function') gameObj.disconnect()
       }
-      purgeGameEngineUI()
     }
   }, [gameInfo.id, gameInfo.slug, playerName])
-
-  // Helper pipeline to broadcast payload through custom msgpackr layer
-  const transmitInputPayload = (modifiedKeys: Partial<typeof activeInputState.current>) => {
-    if (!gameInstance) return
-    const gameObj = gameInstance as any
-
-    // Inherit active camera perspective orientations from your scene camera to guide movement
-    let currentYaw = 0
-    if (gameObj.cameraManager?.yaw) {
-      currentYaw = gameObj.cameraManager.yaw
-    } else if (gameObj.camera?.rotation?.y) {
-      currentYaw = gameObj.camera.rotation.y
-    }
-
-    const nextState = {
-      ...activeInputState.current,
-      ...modifiedKeys,
-      y: currentYaw
-    }
-
-    // Deep comparison to block redundant zero data overhead
-    const packetChanged = 
-      activeInputState.current.u !== nextState.u ||
-      activeInputState.current.d !== nextState.d ||
-      activeInputState.current.l !== nextState.l ||
-      activeInputState.current.r !== nextState.r ||
-      activeInputState.current.i !== nextState.i ||
-      activeInputState.current.y !== nextState.y
-
-    if (packetChanged) {
-      activeInputState.current = nextState
-      
-      // FIX: Route payload directly through the engine's correct InputManager
-      // This bypasses the old/incorrect networkManager syntax entirely.
-      if (gameObj.inputManager) {
-        Object.assign(gameObj.inputManager, nextState)
-        if (typeof gameObj.inputManager.update === 'function') {
-          gameObj.inputManager.update(nextState)
-        }
-      }
-      
-      // Explicit engine execution loop update bridge
-      if (gameObj.localPlayer?.inputComponent) {
-         Object.assign(gameObj.localPlayer.inputComponent, nextState)
-      }
-    }
-  }
-
-  // ============================================================================
-  // JOYSTICK TRANSCRIPTION FOR BACKEND ENGINE FORMAT
-  // ============================================================================
-  const handleJoystickMove = (e: React.TouchEvent<HTMLDivElement>) => {
-    e.preventDefault()
-    if (!gameInstance) return
-
-    const touch = e.touches[0]
-    if (!touch) return
-
-    const maxDistance = 50 
-    const joystickEl = e.currentTarget.getBoundingClientRect()
-    const centerX = joystickEl.left + joystickEl.width / 2
-    const centerY = joystickEl.top + joystickEl.height / 2
-
-    let deltaX = touch.clientX - centerX
-    let deltaY = touch.clientY - centerY
-    const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY)
-
-    if (distance > maxDistance) {
-      deltaX = (deltaX / distance) * maxDistance
-      deltaY = (deltaY / distance) * maxDistance
-    }
-
-    setJoystickOffset({ x: deltaX, y: deltaY })
-
-    // Normalize scale vectors to isolate pure target direction matrices
-    const nX = deltaX / maxDistance
-    const nY = deltaY / maxDistance
-
-    // Threshold cutoff baseline limits to trigger clean discrete boolean keys
-    const deadzone = 0.25
-    
-    transmitInputPayload({
-      u: nY < -deadzone,
-      d: nY > deadzone,
-      l: nX < -deadzone,
-      r: nX > deadzone
-    })
-  }
-
-  const handleJoystickRelease = (e: React.TouchEvent) => {
-    e.preventDefault()
-    setJoystickOffset({ x: 0, y: 0 })
-    // Clear directional booleans immediately on touch leave
-    transmitInputPayload({ u: false, d: false, l: false, r: false })
-  }
-
-  const handleJumpPress = (e: React.TouchEvent) => {
-    e.preventDefault()
-    setIsJumping(true)
-    transmitInputPayload({ i: true })
-  }
-
-  const handleJumpRelease = (e: React.TouchEvent) => {
-    e.preventDefault()
-    setIsJumping(false)
-    transmitInputPayload({ i: false })
-  }
 
   const handleRetry = () => window.location.reload()
 
@@ -245,7 +120,6 @@ export default function GamePlayer({ playerName, ...gameInfo }: GamePlayerProps)
       const gameObj = gameInstance as any
       if (typeof gameObj.disconnect === 'function') gameObj.disconnect()
     }
-    purgeGameEngineUI()
     router.push('/')
   }
 
@@ -343,41 +217,6 @@ export default function GamePlayer({ playerName, ...gameInfo }: GamePlayerProps)
 
       {/* Render Canvas Engine Viewport */}
       <div ref={refContainer} className="w-full h-full" />
-
-      {/* ============================================================================
-          FIXED MOBILE OVERLAYS: TRANSMITTING COMPATIBLE KEY DATA TO SANBOX TS
-          ============================================================================ */}
-      {gameInstance && !isLoading && !connectionError && (
-        <div className="absolute inset-0 pointer-events-none z-20 flex md:hidden">
-          
-          {/* Joystick Base Wrapper */}
-          <div 
-            className="absolute bottom-12 left-12 w-32 h-32 bg-gray-900/40 backdrop-blur-sm border-2 border-white/20 rounded-full pointer-events-auto touch-none select-none flex items-center justify-center"
-            onTouchMove={handleJoystickMove}
-            onTouchEnd={handleJoystickRelease}
-          >
-            {/* Visual Tracking Thumb Knob */}
-            <div 
-              className="w-14 h-14 bg-white/80 border border-gray-400 shadow-xl rounded-full transition-transform duration-75 ease-out"
-              style={{ transform: `translate(${joystickOffset.x}px, ${joystickOffset.y}px)` }}
-            />
-          </div>
-
-          {/* Jump Button Overlay */}
-          <div 
-            className={`absolute bottom-16 right-16 w-24 h-24 rounded-full border-2 pointer-events-auto touch-none select-none flex items-center justify-center text-white font-black text-sm tracking-widest active:scale-95 transform transition-all shadow-2xl ${
-              isJumping 
-                ? 'bg-blue-800 border-blue-400 scale-90 opacity-90' 
-                : 'bg-blue-600/80 border-blue-400/50 backdrop-blur-sm'
-            }`}
-            onTouchStart={handleJumpPress}
-            onTouchEnd={handleJumpRelease}
-          >
-            JUMP
-          </div>
-
-        </div>
-      )}
 
       {/* Attach overlays */}
       {gameInstance && !isLoading && !connectionError && (
