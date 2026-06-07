@@ -162,29 +162,12 @@ export default function GamePlayer({ playerName, ...gameInfo }: GamePlayerProps)
     if (packetChanged) {
       activeInputState.current = nextState
       
-      // Inject ClientMessageType structure layout requirement expected by default engine specs
-      const serverPacket = {
-        t: 0, // Matches ClientMessageType.INPUT index map offset
-        ...nextState
-      }
-
-      if (gameObj.networkManager?.socket?.send) {
-        // Use your unpack/pack binary compiler architecture natively
-        if (typeof gameObj.networkManager.sendInput === 'function') {
-          // If networkManager handles raw updates directly, pipe inside it
-          gameObj.networkManager.socket.send(gameObj.constructor.compress ? gameObj.constructor.compress(serverPacket) : JSON.stringify(serverPacket))
-        } else {
-          // Fallback direct emit structure bypass
-          const socket = gameObj.networkManager.socket
-          if (socket.readyState === 1 || socket.readyState === WebSocket.OPEN) {
-            // Note: If your framework expects raw arraybuffers use your internal pack handler
-             if (gameObj.networkManager.compress) {
-               socket.send(gameObj.networkManager.compress(serverPacket))
-             } else {
-               // Fallback if network manager has direct transmission bindings exposed
-               gameObj.networkManager.sendInputPacket?.(serverPacket)
-             }
-          }
+      // FIX: Route payload directly through the engine's correct InputManager
+      // This bypasses the old/incorrect networkManager syntax entirely.
+      if (gameObj.inputManager) {
+        Object.assign(gameObj.inputManager, nextState)
+        if (typeof gameObj.inputManager.update === 'function') {
+          gameObj.inputManager.update(nextState)
         }
       }
       
