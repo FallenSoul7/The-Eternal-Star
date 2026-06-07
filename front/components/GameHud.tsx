@@ -10,7 +10,7 @@ import { GameInfo } from '@/types'
 import gameData from '../public/gameData.json'
 
 export interface GameHudProps {
-  messages: MessageComponent[]
+  messages: GameComponent[]
   sendMessage: (message: string) => void
   gameInstance: Game
 }
@@ -205,8 +205,16 @@ export default function GameHud({
             size={100}
             baseColor="rgba(255, 255, 255, 0.5)"
             stickColor="rgba(255, 255, 255, 0.2)"
-            move={(props) => gameInstance?.inputManager.handleJoystickMove(props)}
-            stop={(props) => gameInstance?.inputManager.handleJoystickStop(props)}
+            move={(props) => {
+              if (gameInstance && gameInstance.inputManager) {
+                gameInstance.inputManager.handleJoystickMove(props)
+              }
+            }}
+            stop={(props) => {
+              if (gameInstance && gameInstance.inputManager) {
+                gameInstance.inputManager.handleJoystickStop(props)
+              }
+            }}
           />
         </div>
         <div className="absolute bottom-12 right-12">
@@ -214,15 +222,37 @@ export default function GameHud({
             className="bg-gray-500 bg-opacity-20 text-white font-bold py-4 px-8 rounded-full shadow-lg transition-transform transform hover:bg-gray-600 hover:bg-opacity-100 focus:bg-green-600 focus:bg-opacity-100 focus:outline-none active:translate-y-1 w-24 h-24 flex items-center justify-center select-none touch-manipulation"
             
             onTouchStart={(e) => {
-              e.preventDefault();
-              if (gameInstance) gameInstance.inputManager.inputState.s = true;
+              e.preventDefault()
+              if (gameInstance && gameInstance.inputManager) {
+                gameInstance.inputManager.inputState.s = true
+              }
             }}
-            onMouseDown={() => gameInstance && (gameInstance.inputManager.inputState.s = true)}
+            onMouseDown={() => {
+              if (gameInstance && gameInstance.inputManager) {
+                gameInstance.inputManager.inputState.s = true
+              }
+            }}
             
-            onTouchEnd={() => gameInstance && (gameInstance.inputManager.inputState.s = false)}
-            onTouchCancel={() => gameInstance && (gameInstance.inputManager.inputState.s = false)}
-            onMouseUp={() => gameInstance && (gameInstance.inputManager.inputState.s = false)}
-            onMouseLeave={() => gameInstance && (gameInstance.inputManager.inputState.s = false)}
+            onTouchEnd={() => {
+              if (gameInstance && gameInstance.inputManager) {
+                gameInstance.inputManager.inputState.s = false
+              }
+            }}
+            onTouchCancel={() => {
+              if (gameInstance && gameInstance.inputManager) {
+                gameInstance.inputManager.inputState.s = false
+              }
+            }}
+            onMouseUp={() => {
+              if (gameInstance && gameInstance.inputManager) {
+                gameInstance.inputManager.inputState.s = false
+              }
+            }}
+            onMouseLeave={() => {
+              if (gameInstance && gameInstance.inputManager) {
+                gameInstance.inputManager.inputState.s = false
+              }
+            }}
           >
             <span className="pointer-events-none">Jump</span>
           </button>
