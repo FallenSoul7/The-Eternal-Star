@@ -1,4 +1,4 @@
-  async initialize() {
+   async initialize() {
     await this.exclusive(async () => {
       // Kept your original static import of Chat for cleanliness
       new Chat()
@@ -44,3 +44,4 @@
       }
     })
   }
+ 
