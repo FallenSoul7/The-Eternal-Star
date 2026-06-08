@@ -34,10 +34,15 @@ new MapWorld(mapUrl)
 // 3. If it is an empty custom map, spawn a solid floor plate so players can stand, walk, and jump
 if (isCustomMap) {
   new Cube({
-    position: { x: 0, y: 0, z: 0 },
-    size: { width: 600, height: 2, depth: 600 }
+    position: { x: 0, y: -1, z: 0 }, // Slightly below 0 to prevent z-fighting
+    size: { width: 600, height: 2, depth: 600 },
+    // ADD THIS: Mass 0 makes the body static/immovable
+    physicsProperties: { mass: 0 }, 
+    // ADD THIS: Friction helps the player movement "stick" to the ground
+    colliderProperties: { friction: 1.0, restitution: 0 } 
   })
 }
+
 
 // 4. Sandbox entities - Spawn ONLY on the original default Village map
 if (!isCustomMap) {
