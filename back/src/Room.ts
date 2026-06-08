@@ -134,13 +134,19 @@ export class Room {
     }
   }
 
-  async initialize() {
+    async initialize() {
     await this.exclusive(async () => {
+      // FIX: Reset global variable right away so hardcoded maps don't accidentally fetch from Supabase
+      process.env.CURRENT_MAP_URL = "" 
+
       // Kept your original static import of Chat for cleanliness
       new Chat()
 
       let scriptFile = SLUG_TO_SCRIPT[this.slug]
       let isCustomMap = false
+      
+      // ... (rest of your initialize code stays exactly the same)
+
 
       // If no static script, check Supabase for a user-uploaded map
       if (!scriptFile) {
