@@ -33,12 +33,12 @@ new MapWorld(mapUrl)
 
 // 3. If it is an empty custom map, spawn a solid floor plate so players can stand, walk, and jump
 if (isCustomMap) {
+  // Let's spawn a massive, flat, solid platform high in the sky (y: 80)
+  // If your spawn point is higher than 80, you will drop directly onto this flat surface.
   new Cube({
-    position: { x: 0, y: -1, z: 0 }, // Slightly below 0 to prevent z-fighting
-    size: { width: 600, height: 2, depth: 600 },
-    // ADD THIS: Mass 0 makes the body static/immovable
-    physicsProperties: { mass: 0 }, 
-    // ADD THIS: Friction helps the player movement "stick" to the ground
+    position: { x: 0, y: 80, z: 0 }, 
+    size: { width: 100, height: 2, depth: 100 },
+    physicsProperties: { mass: 0, gravityScale: 0 }, // Mass 0 = solid, immovable ground
     colliderProperties: { friction: 1.0, restitution: 0 } 
   })
 }
