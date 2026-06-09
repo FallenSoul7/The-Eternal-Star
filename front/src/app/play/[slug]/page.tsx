@@ -31,7 +31,7 @@ async function getGamesBySlug(slug: string): Promise<GameInfo> {
     slug: data.slug,
     imageUrl: data.icon_url || '',
     mapUrl: data.map_url, 
-    websocketPort: 8080, // NOTE: If your server does NOT run on 8080, change this!
+    // REMOVED websocketPort so it stops looking for localhost:8080
     metaDescription: `Custom map uploaded to The Eternal Star`,
     markdown: '',
     images: data.icon_url ? [{ url: data.icon_url, width: 1200, height: 630, alt: data.title, type: 'image/png' }] : []
