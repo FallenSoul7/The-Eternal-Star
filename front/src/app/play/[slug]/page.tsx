@@ -1,8 +1,8 @@
-import gameData from '../../../../public/gameData.json' // Corrected to 4 steps
+import gameData from '../../../../public/gameData.json'
 import { Metadata } from 'next'
-import GameContent from '../../../../components/GameContent' // 4 steps
+import GameContent from '../../../../components/GameContent'
 import { GameInfo } from '@/types'
-import { supabase } from '../../../supabaseClient' // Corrected to 3 steps
+import { supabase } from '../../../supabaseClient'
 
 // This tells Next.js to dynamically serve new pages when users upload maps
 export const dynamicParams = true 
@@ -36,6 +36,7 @@ async function getGamesBySlug(slug: string): Promise<GameInfo> {
     title: data.title,
     slug: data.slug,
     imageUrl: data.icon_url || '',
+    mapUrl: data.map_url, // FIXED: Now passing the 3D map URL from the database
     websocketPort: 8080, // Fallback default port
     metaDescription: `Custom map uploaded to The Eternal Star`,
     markdown: '',
@@ -47,7 +48,7 @@ type Params = Promise<{ slug: string }>
 
 export async function generateMetadata({ params }: { params: Params }): Promise<Metadata> {
   const { slug } = await params
-  const gameInfo = await getGamesBySlug(slug) // Added await here
+  const gameInfo = await getGamesBySlug(slug)
   return {
     title: `Play ${gameInfo.title} - The Eternal Star`,
     description: gameInfo.metaDescription,
@@ -64,6 +65,6 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
 
 export default async function GamePage({ params }: { params: Params }) {
   const { slug } = await params
-  const gameInfo = await getGamesBySlug(slug) // Added await here
+  const gameInfo = await getGamesBySlug(slug)
   return <GameContent gameInfo={gameInfo} />
 }
