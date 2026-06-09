@@ -20,17 +20,15 @@ export class WebSocketManager {
 
   timeSinceLastServerUpdate: number = 0
 
-  /**
-   * slug: the map slug e.g. "football", "obby", "my-custom-map"
-   * The server URL comes from NEXT_PUBLIC_SERVER_URL env var.
-   * All maps now live on the same server, differentiated by URL path.
-   *
-   * Dev:  ws://localhost:8000/football
-   * Prod: wss://your-render-server.onrender.com/football
-   */
   constructor(game: Game, slug: string) {
-    const baseUrl = process.env.NEXT_PUBLIC_SERVER_URL ?? 'ws://localhost:8000'
-    // Strip any trailing slash, then append the slug as the path
+    // 1. Get URL from env, or use your live Render URL as the absolute fallback
+    let baseUrl = process.env.NEXT_PUBLIC_SERVER_URL ?? 'wss://the-eternal-star.onrender.com'
+    
+    // 2. SMART FIX: Force HTTP/HTTPS to WS/WSS protocols so the browser doesn't block it
+    if (baseUrl.startsWith('http://')) baseUrl = baseUrl.replace('http://', 'ws://')
+    if (baseUrl.startsWith('https://')) baseUrl = baseUrl.replace('https://', 'wss://')
+
+    // 3. Build final connection string
     this.serverUrl = `${baseUrl.replace(/\/$/, '')}/${slug}`
 
     this.addMessageHandler(ServerMessageType.FIRST_CONNECTION, (message) => {
