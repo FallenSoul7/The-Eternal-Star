@@ -134,7 +134,7 @@ export class Room {
     }
   }
 
-    async initialize() {
+  async initialize() {
     await this.exclusive(async () => {
       // FIX: Reset global variable right away so hardcoded maps don't accidentally fetch from Supabase
       process.env.CURRENT_MAP_URL = "" 
@@ -144,9 +144,6 @@ export class Room {
 
       let scriptFile = SLUG_TO_SCRIPT[this.slug]
       let isCustomMap = false
-      
-      // ... (rest of your initialize code stays exactly the same)
-
 
       // If no static script, check Supabase for a user-uploaded map
       if (!scriptFile) {
@@ -175,13 +172,17 @@ export class Room {
       if (!scriptFile) scriptFile = 'defaultScript.ts'
 
       const scriptPath = resolve(import.meta.dirname, 'scripts', scriptFile)
+      
+      // FIX 1: THE CACHE BUSTER. Forces Node.js to load a fresh instance of the script for new rooms.
+      const cacheBuster = `?t=${Date.now()}`
+
       try {
-        await import(pathToFileURL(scriptPath).href)
-        console.log(`[Room:${this.slug}] Script loaded: ${scriptFile}`)
+        await import(pathToFileURL(scriptPath).href + cacheBuster)
+        console.log(`[Room:${this.slug}] Script loaded freshly: ${scriptFile}`)
       } catch (err) {
         console.error(`[Room:${this.slug}] Script failed, using default:`, err)
         const fallback = resolve(import.meta.dirname, 'scripts', 'defaultScript.ts')
-        await import(pathToFileURL(fallback).href)
+        await import(pathToFileURL(fallback).href + cacheBuster)
       }
     })
   }
@@ -275,6 +276,16 @@ export class Room {
   destroy() {
     this.isRunning = false
     if (this.loopHandle) clearTimeout(this.loopHandle)
+    
+    // FIX 2: Clear the Rapier physics world to prevent ghost geometry carrying over to new maps
+    if (this.ps && this.ps.world) {
+      try {
+        this.ps.world.free()
+      } catch (e) {
+        console.error(`[Room:${this.slug}] Failed to free Rapier physics world:`, e)
+      }
+    }
+    
     console.log(`[Room:${this.slug}] Destroyed`)
   }
 
