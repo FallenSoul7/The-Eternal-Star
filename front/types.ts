@@ -1,5 +1,5 @@
 export interface GameInfo {
-  id: string // Added to support your gateway logic
+  id: string | number // FIXED: Accepts both string and number IDs
   title: string
   slug: string
   imageUrl: string
@@ -13,5 +13,5 @@ export interface GameInfo {
   }[]
   metaDescription: string
   markdown: string
-  mapUrl?: string // FIXED: Added to safely carry custom user-uploaded map URLs
+  mapUrl?: string
 }
