@@ -13,4 +13,5 @@ export interface GameInfo {
   }[]
   metaDescription: string
   markdown: string
+  mapUrl?: string // FIXED: Added to safely carry custom user-uploaded map URLs
 }
