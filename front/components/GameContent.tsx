@@ -14,33 +14,19 @@ import { Game } from '@/game/Game'
 export default function GameContent({ gameInfo }: { gameInfo: GameInfo }) {
   const [isPlaying, setIsPlaying] = useState(false)
   const [playerName, setPlayerName] = useState<string>('Guest')
-  const [customMapUrl, setCustomMapUrl] = useState<string | null>(null)
 
-  // Fetch live cloud GLB URL for custom user-created maps so the engine can load them
+  // Instantly apply the map URL sent from the server page.tsx
   useEffect(() => {
-    const isStatic = gameData.some(g => g.slug === gameInfo.slug)
-    if (!isStatic) {
-      supabase
-        .from('maps')
-        .select('map_url')
-        .eq('slug', gameInfo.slug)
-        .single()
-        .then(({ data }) => {
-          if (data?.map_url) {
-            setCustomMapUrl(data.map_url)
-            
-            // Universal engine protection: pass properties to the window scope
-            if (typeof window !== 'undefined') {
-              (window as any).CURRENT_MAP_URL = data.map_url;
-              // Fallback default script script environment initialization fix
-              if (!(window as any).CURRENT_MAP_SCRIPT) {
-                (window as any).CURRENT_MAP_SCRIPT = 'defaultScript.ts'
-              }
-            }
-          }
-        })
+    if (typeof window !== 'undefined') {
+      if (gameInfo.mapUrl) {
+        (window as any).CURRENT_MAP_URL = gameInfo.mapUrl;
+      }
+      // Fallback default script script environment initialization fix
+      if (!(window as any).CURRENT_MAP_SCRIPT) {
+        (window as any).CURRENT_MAP_SCRIPT = 'defaultScript.ts'
+      }
     }
-  }, [gameInfo.slug])
+  }, [gameInfo])
 
   // Fetch the logged-in user's true username silently for the game engine
   useEffect(() => {
@@ -101,7 +87,7 @@ export default function GameContent({ gameInfo }: { gameInfo: GameInfo }) {
       {isPlaying ? (
         <GamePlayer 
           {...gameInfo} 
-          mapUrl={customMapUrl || undefined} 
+          mapUrl={gameInfo.mapUrl} // FIXED: Passed directly from server
           playerName={playerName} 
         />
       ) : (
