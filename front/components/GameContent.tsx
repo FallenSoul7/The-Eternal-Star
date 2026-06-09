@@ -15,20 +15,16 @@ export default function GameContent({ gameInfo }: { gameInfo: GameInfo }) {
   const [isPlaying, setIsPlaying] = useState(false)
   const [playerName, setPlayerName] = useState<string>('Guest')
 
-  // Instantly apply the map URL sent from the server page.tsx
+  // Safely assign global variables ONLY if a custom map URL was provided
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      if (gameInfo.mapUrl) {
-        (window as any).CURRENT_MAP_URL = gameInfo.mapUrl;
-      }
-      // Fallback default script script environment initialization fix
+    if (typeof window !== 'undefined' && gameInfo.mapUrl) {
+      (window as any).CURRENT_MAP_URL = gameInfo.mapUrl;
       if (!(window as any).CURRENT_MAP_SCRIPT) {
-        (window as any).CURRENT_MAP_SCRIPT = 'defaultScript.ts'
+        (window as any).CURRENT_MAP_SCRIPT = 'defaultScript.ts';
       }
     }
-  }, [gameInfo])
+  }, [gameInfo.mapUrl])
 
-  // Fetch the logged-in user's true username silently for the game engine
   useEffect(() => {
     async function getProfileName() {
       try {
@@ -51,11 +47,9 @@ export default function GameContent({ gameInfo }: { gameInfo: GameInfo }) {
         console.error('Error loading account profile name:', err)
       }
     }
-
     getProfileName()
   }, [])
 
-  // Explicit user click handler to clear singleton engine cache & securely bypass browser fullscreen blocks
   const handlePlayClick = () => {
     try {
       const globalGame = Game as any
@@ -63,13 +57,12 @@ export default function GameContent({ gameInfo }: { gameInfo: GameInfo }) {
         if (typeof globalGame.instance.disconnect === 'function') {
           globalGame.instance.disconnect()
         }
-        globalGame.instance = null // Nukes old cached ports completely
+        globalGame.instance = null 
       }
     } catch (e) {
-      console.warn('Game singleton instance cleanup skipped or not instantiated yet.', e)
+      console.warn('Game singleton instance cleanup skipped.', e)
     }
 
-    // Trigger browser fullscreen immediately on user tap event (Mobile URL bypass)
     const element = document.documentElement as any
     if (!document.fullscreenElement && !(document as any).webkitFullscreenElement) {
       if (element.requestFullscreen) {
@@ -87,7 +80,7 @@ export default function GameContent({ gameInfo }: { gameInfo: GameInfo }) {
       {isPlaying ? (
         <GamePlayer 
           {...gameInfo} 
-          mapUrl={gameInfo.mapUrl} // FIXED: Passed directly from server
+          mapUrl={gameInfo.mapUrl} 
           playerName={playerName} 
         />
       ) : (
@@ -120,11 +113,7 @@ export default function GameContent({ gameInfo }: { gameInfo: GameInfo }) {
                       stroke="currentColor"
                       strokeWidth={2}
                     >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"
-                      />
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
                     </svg>
                   </div>
                 </div>
