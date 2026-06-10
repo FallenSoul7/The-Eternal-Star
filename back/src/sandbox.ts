@@ -104,7 +104,7 @@ async function startServer() {
         }
 
         room.activate()
-        const player = room.addPlayer(ws, 0, 450, 0)
+        const player = room.addPlayer(ws, 0, 570, 0)
         ws.getUserData().player = player
 
         const connectionMessage: ConnectionMessage = {
