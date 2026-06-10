@@ -96,15 +96,15 @@ async function startServer() {
 
       try {
         const room = await roomManager.getOrCreate(slug)
+if (!room.isRunning) {
+  await room.initialize()
+  // Wait 500ms for map to fully load before spawning player
+  await new Promise(resolve => setTimeout(resolve, 500))
+  room.start()
+}
+room.activate()
+const player = room.addPlayer(ws, 0, 570, 0)
 
-        // FIXED: Ensure room is initialized and started before adding player
-        if (!room.isRunning) {
-          await room.initialize()
-          room.start()
-        }
-
-        room.activate()
-        const player = room.addPlayer(ws, 0, 570, 0)
         ws.getUserData().player = player
 
         const connectionMessage: ConnectionMessage = {
