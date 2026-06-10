@@ -76,7 +76,7 @@ export class Room {
     try { return await fn() } finally { release() }
   }
 
-  async initialize() {
+    async initialize() {
     await this.exclusive(async () => {
       // 1. Reset map state
       process.env.CURRENT_MAP_URL = "" 
@@ -120,9 +120,3 @@ export class Room {
       }
     })
   }
-
-  destroy() {
-    // ... existing destroy logic
-    console.log(`[Room:${this.slug}] Destroyed & Physics Cleared`)
-  }
-}
