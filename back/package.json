@@ -1,7 +1,7 @@
 {
-  "name": "@notblox/back",
+  "name": "eternal-star-back",
   "version": "1.0.0",
-  "description": "NotBlox game server backend",
+  "description": "Eternal Star master server backend",
   "main": "src/sandbox.ts",
   "type": "module",
   "private": true,
@@ -25,6 +25,7 @@
   "dependencies": {
     "@dimforge/rapier3d-compat": "^0.14.0",
     "@notblox/shared": "workspace:*",
+    "@supabase/supabase-js": "^2.43.0",
     "dotenv": "^16.3.1",
     "msgpackr": "^1.9.9",
     "node-three-gltf": "^1.8.3",
