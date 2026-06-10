@@ -2,14 +2,14 @@
   "name": "eternal-star-back",
   "version": "1.0.0",
   "description": "Eternal Star master server backend",
-  "main": "src/sandbox.ts",
+  "main": "src/index.ts",
   "type": "module",
   "private": true,
   "scripts": {
-    "debug": "node --import tsx/esm --inspect=7000 src/sandbox.ts",
-    "dev": "tsx watch src/sandbox.ts",
+    "debug": "node --import tsx/esm --inspect=7000 src/index.ts",
+    "dev": "tsx watch src/index.ts",
     "build": "tsc --noEmit",
-    "start": "node --import tsx/esm src/sandbox.ts",
+    "start": "node --import tsx/esm src/index.ts",
     "lint": "eslint src/",
     "format": "eslint src/ --fix"
   },
