@@ -9,20 +9,22 @@ const isCustomMap = !!process.env.CURRENT_MAP_URL;
 console.log(`[Map Engine] Initializing Room. Custom Map Status: ${isCustomMap}`);
 
 // 2. Load the map mesh geometry
-// If no custom URL is provided, it safely falls back to the default Village
-const mapUrl = process.env.CURRENT_MAP_URL || 'https://qynwojpluhxhvwiqmstz.supabase.co/storage/v1/object/public/game-assets/Untitled%20folder/Village%20obbesy.glb'
-new MapWorld(mapUrl)
-
-// 3. Fallback platform for Custom Maps
+// Only load a map if CURRENT_MAP_URL is set (user-uploaded map)
+// Built-in maps (island, football, etc.) don't have a default mesh - they use their own scripts
 if (isCustomMap) {
-  // Spawns a massive, flat, solid platform high in the sky (y: 80)
-  // Ensures players have a guaranteed flat surface to drop onto for physics testing
+  const mapUrl = process.env.CURRENT_MAP_URL
+  new MapWorld(mapUrl)
+  console.log(`[Map Engine] Loaded user map: ${mapUrl}`)
+  
+  // 3. Fallback platform for Custom Maps
+  // Spawns a massive, flat, solid platform so players can stand
   new Cube({
-    position: { x: 0, y: 80, z: 0 }, 
-    size: { width: 100, height: 2, depth: 100 },
+    position: { x: 0, y: 0, z: 0 }, 
+    size: { width: 600, height: 2, depth: 600 },
     physicsProperties: { mass: 0, gravityScale: 0 }, // Mass 0 = solid, immovable ground
     colliderProperties: { friction: 1.0, restitution: 0 } 
   })
+  console.log(`[Map Engine] Added fallback platform for custom map`)
 }
 
 // 4. (Sandbox entities like Cars, Zombies, and Trampolines have been safely removed 
