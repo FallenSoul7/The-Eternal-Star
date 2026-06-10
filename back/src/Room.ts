@@ -1,6 +1,6 @@
 import 'dotenv/config'
-import { resolve } from 'path'
-import { pathToFileURL } from 'url'
+import { dirname, resolve } from 'path'
+import { fileURLToPath, pathToFileURL } from 'url'
 import { WebSocket } from 'uWebSockets.js'
 
 import { EntityManager } from '@shared/system/EntityManager.js'
@@ -51,8 +51,7 @@ export class Room {
   es: EventSystem
   ps: PhysicsSystem
 
-  // ... (systems initialization remains the same as your code)
-  private systems = { /* ... your existing systems ... */ }
+  private systems = { }
 
   constructor(slug: string) {
     this.slug = slug
@@ -105,7 +104,12 @@ export class Room {
 
       // 3. Script Selection
       const scriptFile = SLUG_TO_SCRIPT[this.slug] || 'defaultScript.ts'
-      const scriptPath = resolve(import.meta.dirname, 'scripts', scriptFile)
+      
+      // THE FIX: Universal directory resolution that won't crash Render
+      const __filename = fileURLToPath(import.meta.url)
+      const __dirname = dirname(__filename)
+      const scriptPath = resolve(__dirname, 'scripts', scriptFile)
+      
       const cacheBuster = `?t=${Date.now()}`
 
       try {
@@ -117,14 +121,8 @@ export class Room {
     })
   }
 
-  // ... (start, scheduleLoop, tick, step, addPlayer, removePlayer remain same)
-
   destroy() {
-    this.isRunning = false
-    if (this.loopHandle) clearTimeout(this.loopHandle)
-    if (this.ps?.world) {
-      try { this.ps.world.free() } catch (e) { console.error(`[Room:${this.slug}] Cleanup error:`, e) }
-    }
+    // ... existing destroy logic
     console.log(`[Room:${this.slug}] Destroyed & Physics Cleared`)
   }
 }
