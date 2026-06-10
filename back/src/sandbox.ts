@@ -42,19 +42,14 @@ async function isRateLimited(ip: string): Promise<boolean> {
 }
 
 async function startServer() {
-  const isProduction = process.env.NODE_ENV === 'production'
   const acceptedOrigin = process.env.FRONTEND_URL
 
-  console.log(`NODE_ENV : Running in ${isProduction ? 'production' : 'development'} mode`)
+  console.log(`🚀 Booting server... (Render will handle SSL automatically)`)
 
-  const app = isProduction
-    ? uWS.SSLApp({
-        key_file_name: process.env.SSL_KEY_FILE ?? '/etc/letsencrypt/live/npm-3/privkey.pem',
-        cert_file_name: process.env.SSL_CERT_FILE ?? '/etc/letsencrypt/live/npm-3/cert.pem',
-      })
-    : uWS.App()
+  // THE FIX: We always use standard App. Render provides the WSS secure layer automatically.
+  const app = uWS.App()
 
-  // Health check endpoint
+  // Health check endpoint (Render uses this to make sure you are awake)
   app.get('/health', (res: HttpResponse) => {
     res.writeHeader('Content-Type', 'application/json')
     res.end(JSON.stringify({
@@ -73,7 +68,9 @@ async function startServer() {
 
     upgrade: (res: HttpResponse, req: HttpRequest, context) => {
       const origin = req.getHeader('origin')
-      if (isProduction && acceptedOrigin && origin !== acceptedOrigin) {
+      // Note: If you get blocked after this update, make sure your FRONTEND_URL in Render is correct!
+      if (acceptedOrigin && origin !== acceptedOrigin && origin !== '') {
+        console.warn(`[Gateway] Blocked unauthorized origin: ${origin}`)
         res.writeStatus('403 Forbidden').end()
         return
       }
@@ -104,12 +101,10 @@ async function startServer() {
       try {
         const room = await roomManager.getOrCreate(slug)
 
-        // activate() points singletons at this room then add player
         room.activate()
         const player = room.addPlayer(ws, 0, 450, 0)
         ws.getUserData().player = player
 
-        // Send FIRST_CONNECTION
         const connectionMessage: ConnectionMessage = {
           t: ServerMessageType.FIRST_CONNECTION,
           id: player.entity.id,
@@ -117,7 +112,6 @@ async function startServer() {
         }
         ws.send(NetworkSystem.compress(connectionMessage), true)
 
-        // Welcome chat message
         EventSystem.addEvent(
           new MessageEvent(
             player.entity.id,
@@ -161,12 +155,12 @@ async function startServer() {
     },
   })
 
+  // THE FIX: Binding to Render's dynamic port 
   const PORT = Number(process.env.PORT) || 8000
   app.listen(PORT, (token: unknown) => {
     if (token) {
       console.log(`\n🚀 Eternal Star Master Server running on port ${PORT}`)
-      console.log(`   Connect via: ws://your-server/{slug}`)
-      console.log(`   e.g. ws://localhost:${PORT}/football\n`)
+      console.log(`   Internal Server is Awake and Listening!\n`)
     } else {
       console.error(`❌ Failed to listen on port ${PORT}`)
       process.exit(1)
@@ -180,12 +174,10 @@ function handleMessage(msg: ClientMessage, player: Player, room: Room) {
       const inputMsg = msg as InputMessage
       const { u, d, l, r, s, y, i } = inputMsg
       
-      // FIXED: Accept both boolean AND numeric input (joystick sends numbers)
-      // Validate that we have direction inputs or jump/interact
       const hasDirectionInput = typeof u === 'boolean' || typeof d === 'boolean' || 
                                typeof l === 'boolean' || typeof r === 'boolean'
       const hasActionInput = typeof s === 'boolean' || typeof i === 'boolean'
-      const hasJoystickInput = typeof y === 'number' // Joystick Y value
+      const hasJoystickInput = typeof y === 'number' 
       
       if (hasDirectionInput || hasActionInput || hasJoystickInput) {
         inputProcessingSystem.receiveInputPacket(player.entity, inputMsg)
