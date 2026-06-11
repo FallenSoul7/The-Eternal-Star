@@ -123,16 +123,14 @@ export class Room {
    * Run fn() while holding the global tick lock.
    * Guarantees no other room's async code runs concurrently.
    */
-  async exclusive<T>(fn: () => Promise<T>): Promise<T> {
-    let release!: () => void
-    tickLock = tickLock.then(() => new Promise<void>(r => { release = r }))
-    this.activate()
-    try {
-      return await fn()
-    } finally {
-      release()
-    }
+  async exclusive(callback: () => Promise<void>) {
+  await this.lock.acquire()
+  try {
+    await callback()
+  } finally {
+    this.lock.release()  // ← FIX
   }
+}
 
   async initialize() {
     await this.exclusive(async () => {
