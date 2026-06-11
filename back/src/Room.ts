@@ -48,14 +48,12 @@ const SLUG_TO_SCRIPT: Record<string, string> = {
 }
 
 // Global async lock — only one room's tick runs at a time
-// This prevents singleton collisions during async GLB loads
 let tickLock: Promise<void> = Promise.resolve()
 
 export class Room {
   readonly slug: string
   players: Player[] = []
 
-  // Per-room ECS instances — properly constructed
   em: EntityManager
   es: EventSystem
   ps: PhysicsSystem
@@ -90,14 +88,12 @@ export class Room {
   }
 
   private loopHandle: ReturnType<typeof setTimeout> | null = null
-  private isRunning = false
+  isRunning = false
   private lastFrameTime = Date.now()
   private accumulator = 0
 
   constructor(slug: string) {
     this.slug = slug
-    // Properly construct each system — no Object.create bypass
-    // We temporarily set the singleton to null so getInstance() creates a fresh one
     ;(EntityManager as any).instance = null
     this.em = EntityManager.getInstance()
 
@@ -105,76 +101,70 @@ export class Room {
     this.es = EventSystem.getInstance()
 
     ;(PhysicsSystem as any).instance = null
-    this.ps = PhysicsSystem.getInstance() // runs real constructor: new Rapier.World(gravity)
+    this.ps = PhysicsSystem.getInstance()
   }
 
-  /**
-   * Point the global singletons at this room's instances.
-   * Safe because Node.js is single-threaded and we hold tickLock
-   * through all async operations.
-   */
   activate() {
     ;(EntityManager as any).instance = this.em
     ;(EventSystem as any).instance = this.es
     ;(PhysicsSystem as any).instance = this.ps
   }
 
-  /**
-   * Run fn() while holding the global tick lock.
-   * Guarantees no other room's async code runs concurrently.
-   */
+  // Fixed: uses tickLock promise chain instead of missing lock library
   async exclusive(callback: () => Promise<void>) {
-  await this.lock.acquire()
-  try {
-    await callback()
-  } finally {
-    this.lock.release()  // ← FIX
+    let release!: () => void
+    const next = new Promise<void>(resolve => { release = resolve })
+    const prev = tickLock
+    tickLock = next
+    try {
+      await prev
+      this.activate()
+      await callback()
+    } finally {
+      release()
+    }
   }
-}
 
   async initialize() {
     await this.exclusive(async () => {
-      // 1. Reset map state
       process.env.CURRENT_MAP_URL = ""
       new Chat()
 
       let scriptFile = SLUG_TO_SCRIPT[this.slug]
 
-      // 2. If no static script, check Supabase for a user-uploaded map
       if (!scriptFile) {
         try {
           console.log(`[Room:${this.slug}] Checking Supabase for user map...`)
           const { createClient } = await import('@supabase/supabase-js')
           const sb = createClient(
             process.env.NEXT_PUBLIC_SUPABASE_URL!,
-            process.env.SUPABASE_SERVICE_KEY! // use service key on server
+            process.env.SUPABASE_SERVICE_KEY!
           )
-          const { data: map, error } = await sb.from('maps').select('map_url').eq('slug', this.slug).single()
-          
+          const { data: map, error } = await sb
+            .from('maps')
+            .select('map_url')
+            .eq('slug', this.slug)
+            .single()
+
           if (error) {
             console.log(`[Room:${this.slug}] No user map found (expected for built-in maps)`)
           }
-          
+
           if (map?.map_url) {
             console.log(`[Room:${this.slug}] User map found: ${map.map_url}`)
-            // Set environment variable so defaultScript knows this is a custom map
             process.env.CURRENT_MAP_URL = map.map_url
-            console.log(`[Room:${this.slug}] Custom map mode enabled`)
-            // DO NOT RETURN - continue to load defaultScript which will check CURRENT_MAP_URL
           }
         } catch (err) {
           console.error(`[Room:${this.slug}] Supabase lookup failed:`, err)
         }
       }
 
-      // 3. Fall back to defaultScript if no map was found in DB or local files
       if (!scriptFile) scriptFile = 'defaultScript.ts'
 
-      // 4. Load the script
       const __filename = fileURLToPath(import.meta.url)
       const __dirname = dirname(__filename)
       const scriptPath = resolve(__dirname, 'scripts', scriptFile)
-      
+
       try {
         await import(pathToFileURL(scriptPath).href + `?t=${Date.now()}`)
         console.log(`[Room:${this.slug}] Script loaded: ${scriptFile}`)
